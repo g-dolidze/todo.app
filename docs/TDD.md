@@ -2,16 +2,18 @@
 
 | | |
 |---|---|
-| **Status** | Draft v1.0 — ready for team review |
+| **Status** | Draft v1.1 — ready for team review |
 | **Owner** | Team Lead |
 | **Audience** | Frontend, backend and QA developers |
 | **Repository** | `g-dolidze/todo.app` |
+| **Predecessor** | [`g-dolidze/pro_gress`](https://github.com/g-dolidze/pro_gress) (Pro-gress v0.1 MVP). This app is **Pro-gress v2**. |
 
 ---
 
 ## Table of contents
 
 1. [Summary](#1-summary)
+   - [1.1 Upgrade from Pro-gress v0.1](#11-upgrade-from-pro-gress-v01)
 2. [Goals and non-goals](#2-goals-and-non-goals)
 3. [Glossary](#3-glossary)
 4. [User stories and acceptance criteria](#4-user-stories-and-acceptance-criteria)
@@ -47,11 +49,43 @@ and shows **analytics**:
 
 Every user has their **own account and profile**, and can switch between **light and dark mode**.
 
+Users can also add **one-time tasks** (a single date and time) and group recurring tasks into **missions**
+(a goal with a start and end date, e.g. *"30 days of fitness"*). The UI is in **Georgian and English**.
+
+### 1.1 Upgrade from Pro-gress v0.1
+
+This project replaces [`g-dolidze/pro_gress`](https://github.com/g-dolidze/pro_gress). **Every v0.1 feature is kept**;
+the upgrade fixes its technical limits (described in pro_gress `docs/TDD.md` §2.2, §10.7, §15.3 and §19.4).
+
+| Area | Pro-gress v0.1 (today) | v2 (this document) |
+|------|------------------------|--------------------|
+| Data storage | Browser `localStorage` only. Clearing the browser deletes everything. No sync between devices. | **PostgreSQL** on a server. Data is safe and the same on every device. |
+| Login | Local test login in the browser (Gmail only). Not real security. | **Real accounts** with server-side auth (§13). Any email address. |
+| Repeat rules | `cadence` is **only a label**. Every mission task counts as due **every day**. | **Real schedule engine**: every day or chosen weekdays (§8.1). Missed days are calculated correctly. |
+| Recurring tasks | Exist only inside a mission. | Can be standalone **or** belong to a mission. |
+| Analytics | CSS bar chart (day / week / month / mission). The "day" chart is fake interpolation. No long-term view. | **Bar charts** for short periods + **line charts** for 3m / 6m / 1y, streaks, per-task and per-weekday stats (§9). |
+| Streaks | Not implemented. | Current and longest streak per task (§8.4). |
+| Code structure | Logic, state and UI in one 1300-line `app/page.tsx`. | Layered: pure domain functions, services, API, feature folders (§6, §15). |
+| Tests | One outdated render test. | Test-driven development, unit + API + component + E2E, enforced by CI (§14). |
+| Kept as-is | ka/en UI, light/dark theme, design system colors and font, calendar with day-status badges, missions accordion, guest browsing, profile with avatar. | Same behaviour, re-implemented on the new stack. |
+
+**What developers should reuse from pro_gress (copy, don't rewrite):**
+
+| From `pro_gress` | Use in v2 |
+|------------------|-----------|
+| `app/i18n.ts` (all ka/en strings) | Starting point for `apps/web/src/i18n/ka.json` and `en.json` (§11.5). |
+| `docs/DESIGN_SYSTEM.md` + `app/globals.css` tokens | Color, radius, spacing and font tokens (§12). |
+| Calendar badge rules (pro_gress TDD §10.3) | Same complete / partial / missed indicators (§11.6). |
+| Responsive breakpoints 820 / 560 / 380 px | Same breakpoints. |
+| `public/` icons and Open Graph images | Copy into `apps/web/public/`. |
+
+Existing users bring their data with the **one-time import from localStorage** (§7.4).
+
 ---
 
 ## 2. Goals and non-goals
 
-### Goals (v1)
+### Goals (v2)
 
 | # | Goal |
 |---|------|
@@ -60,14 +94,19 @@ Every user has their **own account and profile**, and can switch between **light
 | G3 | Users can check or uncheck a task for today, and for past days (up to 7 days back). |
 | G4 | Analytics: completion rate, streaks, bar charts (short term), line charts (long term). |
 | G5 | Light, dark and "system" theme, saved per user. |
-| G6 | Responsive UI that works on phone and desktop browsers. |
+| G6 | Responsive UI that works on phone and desktop browsers (from 320 px). |
+| G7 | Keep all Pro-gress v0.1 features: one-time tasks with date and time, missions, calendar with day-status badges, guest browsing. |
+| G8 | Georgian (default) and English UI. |
+| G9 | Pro-gress v0.1 users can import their browser data into their new account. |
 
-### Non-goals (v1, possible later)
+### Non-goals (v2, possible later)
 
 - Native mobile apps.
 - Push or email reminders.
+- AI planner (v0.1 has only a welcome pop-up; it stays a "coming soon" pop-up).
 - Social features (friends, sharing, leaderboards).
-- Tasks repeating every N days or monthly (the data model leaves room for this, see §7.3).
+- Quantity or duration tasks (e.g. "drink 3 litres"), mentioned in the pro_gress PRD.
+- Flexible "N times per week" tasks and tasks repeating every N days or monthly (the data model leaves room, see §7.3).
 - Offline mode.
 
 ---
@@ -83,6 +122,9 @@ Every user has their **own account and profile**, and can switch between **light
 | **Completion rate** | `completed due days / all due days` for a period, as a percentage. |
 | **Streak** | Number of consecutive **due days** completed, counting back from today. Days when the task is not due do not break the streak. |
 | **Local date** | A date (`YYYY-MM-DD`) in the **user's time zone**. All "day" logic uses local dates, never UTC timestamps. |
+| **One-time task** | A task for one date and time only, e.g. "Doctor at 15:00 on Oct 9". Same as v0.1 `Task`. Done or not done. |
+| **Mission** | A goal with a start and end date that groups recurring tasks, e.g. "30 days of fitness". Same as v0.1 `Mission`. In v0.1 its tasks were called *system tasks* (სისტემური დავალებები); in v2 they are normal recurring tasks with a `missionId`. |
+| **Guest mode** | Browsing without an account (as in v0.1). Data stays in the browser until the user signs up. |
 
 ---
 
@@ -92,9 +134,9 @@ Every user has their **own account and profile**, and can switch between **light
 
 | ID | Story | Acceptance criteria |
 |----|-------|---------------------|
-| US-1 | As a visitor I can sign up with name, email and password. | Email must be unique and valid. Password needs at least 8 characters with 1 letter and 1 digit. After sign-up I am logged in. The time zone is detected from the browser automatically. |
+| US-1 | As a visitor I can sign up with first name, last name, email and password. | Email must be unique and valid. Password needs at least 8 characters with 1 letter and 1 digit. After sign-up I am logged in. The time zone is detected from the browser automatically. |
 | US-2 | As a user I can log in and log out. | Wrong credentials show a generic error ("Invalid email or password"). Logout clears the session. |
-| US-3 | As a user I can view and edit my profile. | I can edit name, avatar, time zone, week start day (Mon/Sun) and theme. I can change my password if I enter the current one. |
+| US-3 | As a user I can view and edit my profile. | I can edit first and last name, avatar (photo upload or one of the built-in icons, as in v0.1), time zone, language, week start day (Mon/Sun) and theme. I can change my password if I enter the current one. |
 | US-4 | As a user I can delete my account. | I must confirm with my password. All my data is deleted permanently. |
 
 ### 4.2 Tasks
@@ -122,7 +164,19 @@ Every user has their **own account and profile**, and can switch between **light
 | US-13 | As a user I see my overall stats. | KPI cards: today's progress, current best streak, completion rate for the last 7 and 30 days. |
 | US-14 | As a user I see short-term bar charts. | A **bar chart** of completion % per day for the last 7 or 30 days; a bar chart of completion % per task; a bar chart of completion % per weekday. |
 | US-15 | As a user I see long-term line charts. | A **line chart** of completion % over 3 months (weekly points), 6 months (weekly points) or 1 year (monthly points). |
-| US-16 | As a user I can filter analytics per task. | A task selector filters every chart to "All tasks" or one task. |
+| US-16 | As a user I can filter analytics per task. | A task selector filters every chart to "All tasks", one mission, or one task. |
+
+### 4.5 Kept from Pro-gress v0.1
+
+| ID | Story | Acceptance criteria |
+|----|-------|---------------------|
+| US-17 | As a user I can add a one-time task. | Title, date and time are required (default time 09:00). It appears on that day in Today and the calendar, sorted by time. I can tick it, untick it, edit it and delete it. |
+| US-18 | As a user I can create a mission. | Title, start and end date are required (`end >= start`; default period today + 29 days). At least one recurring task, each with its own schedule. |
+| US-19 | As a user I can see and edit missions. | Missions show as an accordion: title, dates, progress %, progress bar. Edit and delete (with confirmation) work as in v0.1. Deleting a mission asks: "Delete its tasks too, or keep them as standalone tasks?" |
+| US-20 | As a user I see a month calendar. | 6×7 grid, week starts on my `week_start`. Past days show a badge: green ✓ (all done), yellow `x/y` ring (partly done), red × (nothing done). Today and future days show the number of planned tasks. Clicking a day opens it in Today (editable only within the 7-day window). |
+| US-21 | As a user I can switch language. | ka / en switcher in the header. It translates the whole UI, dates and accessibility labels. The choice is saved to my profile (and in `localStorage` for guests). |
+| US-22 | As a visitor I can browse as a guest. | Without an account I can try the app. Data is kept in the browser. When I sign up, it is imported into my account automatically (§7.4). |
+| US-23 | As a Pro-gress v0.1 user I can import my data. | On first login on the same browser the app finds old v0.1 data and offers "Import". After import, my tasks, missions and check-ins are in my account. Running it twice does not create duplicates. |
 
 ---
 
@@ -144,7 +198,7 @@ Every user has their **own account and profile**, and can switch between **light
 | Testing | **Vitest**, **Supertest**, **React Testing Library**, **Playwright** | See §14. |
 | Tooling | pnpm workspaces, ESLint, Prettier, Husky | Monorepo with shared code. |
 | CI | GitHub Actions | Lint, typecheck and tests on every PR. |
-| Deploy | Frontend: Vercel. Backend and DB: Render or Railway. | Cheap and easy for v1. |
+| Deploy | Frontend: Vercel. Backend and DB: Render or Railway. | Cheap and easy to start with. |
 
 ---
 
@@ -215,7 +269,10 @@ sequenceDiagram
 ```mermaid
 erDiagram
     USER ||--o{ HABIT : owns
+    USER ||--o{ MISSION : owns
+    USER ||--o{ ONE_TIME_TASK : owns
     USER ||--o{ REFRESH_TOKEN : has
+    MISSION |o--o{ HABIT : groups
     HABIT ||--|{ HABIT_SCHEDULE : "has versions"
     HABIT ||--o{ CHECKIN : has
 
@@ -223,17 +280,40 @@ erDiagram
         uuid id PK
         string email UK
         string password_hash
-        string name
-        string avatar_url
+        string first_name
+        string last_name
+        string avatar "image URL or icon name"
         string timezone "IANA, e.g. Asia/Tbilisi"
+        enum locale "KA | EN"
         enum theme "LIGHT | DARK | SYSTEM"
         int week_start "1=Mon, 7=Sun"
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    MISSION {
+        uuid id PK
+        uuid user_id FK
+        string title
+        string description
+        date start_date
+        date end_date
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    ONE_TIME_TASK {
+        uuid id PK
+        uuid user_id FK
+        string title
+        date date "user local date"
+        time time "HH:mm"
+        timestamptz done_at "null = not done"
         timestamptz created_at
         timestamptz updated_at
     }
     HABIT {
         uuid id PK
         uuid user_id FK
+        uuid mission_id FK "nullable"
         string title
         string description
         string icon
@@ -276,6 +356,14 @@ erDiagram
 | `habit_schedule` | `INDEX(habit_id, valid_from)` | Schedule lookups by date. |
 | `checkin` | **`UNIQUE(habit_id, date)`** | A task can be done at most once per day, which makes the toggle idempotent. |
 | `checkin` | `INDEX(habit_id, date)` | Range queries for analytics. |
+| `mission` | `CHECK(end_date >= start_date)`, `INDEX(user_id, end_date)` | Valid period; list active missions fast. |
+| `one_time_task` | `INDEX(user_id, date, time)` | Today list and calendar, sorted by time. |
+| `habit.mission_id` | FK `ON DELETE SET NULL` (or the service deletes the habits first if the user chose "delete tasks too") | Matches US-19. |
+
+**Mission tasks are habits.** A habit with `mission_id` is due only while the mission runs:
+`isDue` also checks `mission.start_date <= date <= mission.end_date` (§8.1). Mission progress uses the same
+`due / completed` formula as all other analytics (§9.1). This fixes v0.1, where the formula was `days × tasks`
+no matter which days each task was scheduled for.
 | all FKs | `ON DELETE CASCADE` | Deleting a user or task removes its data. |
 
 A row in `checkin` means **done**. No row means **not done**. "Missed" is never stored; it is
@@ -295,6 +383,47 @@ To find the schedule for a date `d`, use the version where `valid_from <= d AND 
 
 > Adding new schedule types later (e.g. `EVERY_N_DAYS`) only needs a new enum value, an extra column
 > (`interval`), and a new branch in `isDue()`.
+
+### 7.4 Import from Pro-gress v0.1 (and from guest mode)
+
+Pro-gress v0.1 saves data in the browser under these `localStorage` keys (see pro_gress `docs/TDD.md` §8.1):
+
+| v0.1 key | Contents |
+|----------|----------|
+| `progress-tasks-v2:{userId}` (or legacy `progress-tasks-v2`) | `Task[]`: `{ id, title, date, time, done, type: "one-time" }` |
+| `progress-missions-v4:{userId}` (or legacy `progress-missions-v4`) | `Mission[]`: `{ id, title, startDate, endDate, tasks: [{ id, title, cadence, completions: { "YYYY-MM-DD": boolean } }] }` |
+| `progress-theme`, `progress-locale` | `light \| dark`, `ka \| en` |
+
+**Flow:**
+
+1. After login, the web app checks for these keys. If found, it shows an "Import your Pro-gress data" banner.
+2. The browser reads the keys, validates them with a Zod schema (`ProgressV01ExportSchema` in `packages/shared`), and
+   sends `POST /api/v1/import/progress-v01`. Corrupt entries are skipped and reported back, never fatal.
+3. The server maps everything **in one DB transaction**:
+
+| v0.1 | v2 |
+|------|----|
+| `Task` | `one_time_task` (`done: true` → `done_at = now()`) |
+| `Mission` | `mission` |
+| `MissionTask` | `habit` with `mission_id`, `start_date = mission.startDate`, plus a schedule from the table below |
+| `completions[date] === true` | `checkin(habit_id, date)` (the 7-day edit limit does **not** apply to import) |
+| `progress-theme` / `progress-locale` | `user.theme` / `user.locale`, only if the user has not changed them yet |
+
+| v0.1 `cadence` (stored as Georgian text) | v2 schedule |
+|------------------------------------------|-------------|
+| `ყოველდღე` (every day) | `DAILY` |
+| `სამუშაო დღეებში` (on weekdays) | `WEEKLY [1,2,3,4,5]` |
+| `კვირაში 3-ჯერ` (3 times a week) | `WEEKLY [1,3,5]`, and the import report tells the user to adjust it |
+| `კვირაში ერთხელ` (once a week) | `WEEKLY [1]`, and the import report tells the user to adjust it |
+| anything else | `DAILY` (this matches how v0.1 counted it) |
+
+4. **No duplicates:** each imported row stores `legacy_id` (the v0.1 numeric id), with `UNIQUE(user_id, legacy_id)`
+   on `mission`, `habit` and `one_time_task`. A second import updates rows instead of adding new ones.
+5. After a successful import the browser keeps the old keys for 30 days (as a backup), then deletes them.
+
+**Guest mode** uses the same path: guest data is stored in the browser in the **v0.1 format** with the key prefix
+`progress-guest`, so signing up reuses the same import endpoint. Guests have no analytics beyond today and the
+calendar (analytics need the server).
 
 ---
 
@@ -318,12 +447,15 @@ interface Schedule {
 interface HabitForDomain {
   startDate: ISODate;
   archivedOn: ISODate | null; // local date of archived_at
+  mission: { startDate: ISODate; endDate: ISODate } | null;
   schedules: Schedule[];
 }
 
 function isDue(habit: HabitForDomain, date: ISODate): boolean {
   if (date < habit.startDate) return false;                        // not started yet
   if (habit.archivedOn && date >= habit.archivedOn) return false; // archived
+  if (habit.mission && (date < habit.mission.startDate || date > habit.mission.endDate))
+    return false;                                                  // outside its mission
   const s = habit.schedules.find(
     (v) => v.validFrom <= date && (v.validTo === null || date <= v.validTo),
   );
@@ -389,10 +521,14 @@ Tuesday, Thursday, Saturday and Sunday don't count because the task isn't due on
 For any period and any set of tasks:
 
 ```
-due       = number of (task, date) pairs where isDue(task, date) and date <= today
-completed = number of those pairs that have a check-in
+due       = number of (habit, date) pairs where isDue(habit, date) and date <= today
+            + number of one-time tasks whose date is in the period and <= today
+completed = number of those that are done (check-in exists / done_at is set)
 rate      = due == 0 ? null : completed / due * 100   (rounded to 1 decimal)
 ```
+
+Every task has the same weight (as in v0.1). One-time tasks count in the **daily**, **trend**, **weekday** and
+**calendar** numbers, but not in **per-task** charts or streaks, because they happen only once.
 
 `rate = null` means *no data* (for example the user had no tasks yet). The chart shows a **gap**, not 0%.
 
@@ -405,7 +541,11 @@ rate      = due == 0 ? null : completed / due * 100   (rounded to 1 decimal)
 | **Per task** | **Bar** (horizontal) | 7d / 30d / 90d | % done | task name | 1 bar per task |
 | **Per weekday** | **Bar** | last 90 days | Mon…Sun | % done | 1 bar per weekday |
 | **Long-term trend** | **Line** | 3m / 6m / 1y | week or month | % done | 3m and 6m: weekly; 1y: monthly |
+| **Per mission** | **Bar** (horizontal) | mission start → min(today, end) | % done | mission name | 1 bar per mission |
 | Streak history (optional) | Line | 1y | date | streak length | daily |
+| Calendar badges | ✓ / ring / × | the visible month | — | — | 1 badge per past day |
+
+The v0.1 "day by hour" chart is **removed**. It was a made-up interpolation, not real data (pro_gress TDD §10.7).
 
 **Rule of thumb:** periods of **30 days or less use bars**, so each day can be compared on its own.
 **Longer periods use lines**, to show the trend over time.
@@ -423,7 +563,7 @@ flowchart TD
 ```
 
 - Calculations happen **in the service, in memory**. With at most about 50 tasks × 366 days = ~18k checks,
-  this is fast enough (well under 50 ms). Do not pre-aggregate in v1.
+  this is fast enough (well under 50 ms). Do not pre-aggregate yet.
 - Week buckets start on the user's `week_start`. Month buckets are calendar months.
 - A partial current week or month is included and flagged `partial: true`, so the UI can draw it dashed or lighter.
 - **Later optimisation (only if needed):** a nightly `daily_stats(user_id, date, due, completed)` table.
@@ -469,7 +609,7 @@ Request bodies are validated with **Zod** schemas from `packages/shared`.
 
 | Method | Path | Body | Response |
 |--------|------|------|----------|
-| POST | `/auth/register` | `{ name, email, password, timezone }` | `201 { accessToken, user }` + refresh cookie |
+| POST | `/auth/register` | `{ firstName, lastName, email, password, timezone, locale }` | `201 { accessToken, user }` + refresh cookie |
 | POST | `/auth/login` | `{ email, password }` | `200 { accessToken, user }` + refresh cookie |
 | POST | `/auth/refresh` | — (cookie) | `200 { accessToken }` (rotates refresh token) |
 | POST | `/auth/logout` | — | `204`, revokes the refresh token |
@@ -479,7 +619,7 @@ Request bodies are validated with **Zod** schemas from `packages/shared`.
 | Method | Path | Body | Response |
 |--------|------|------|----------|
 | GET | `/me` | — | `200 User` |
-| PATCH | `/me` | `{ name?, avatarUrl?, timezone?, theme?, weekStart? }` | `200 User` |
+| PATCH | `/me` | `{ firstName?, lastName?, avatar?, timezone?, locale?, theme?, weekStart? }` | `200 User` |
 | PUT | `/me/password` | `{ currentPassword, newPassword }` | `204` |
 | DELETE | `/me` | `{ password }` | `204` |
 
@@ -500,7 +640,7 @@ Request bodies are validated with **Zod** schemas from `packages/shared`.
 
 | Method | Path | Response |
 |--------|------|----------|
-| GET | `/today?date=YYYY-MM-DD` (default: today) | `200 { date, items: [{ habit, done, streak }], done, total }` |
+| GET | `/today?date=YYYY-MM-DD` (default: today) | `200 { date, habits: [{ habit, done, streak }], missionHabits: [...], oneTimeTasks: [...], done, total }` |
 | PUT | `/habits/:id/checkins/:date` | `200 { checkin, currentStreak }` |
 | DELETE | `/habits/:id/checkins/:date` | `200 { currentStreak }` |
 
@@ -513,6 +653,36 @@ Request bodies are validated with **Zod** schemas from `packages/shared`.
 | GET | `/analytics/by-habit` | `range=7d\|30d\|90d` | `SeriesPoint[]` (one per task) → bar chart |
 | GET | `/analytics/by-weekday` | `range=90d` | `SeriesPoint[]` (7 points) → bar chart |
 | GET | `/analytics/trend` | `range=3m\|6m\|1y` | `SeriesPoint[]` (weeks or months) → line chart |
+| GET | `/analytics/by-mission` | — | `SeriesPoint[]` (one per mission) → bar chart |
+| GET | `/calendar` | `month=YYYY-MM` | `[{ date, due, completed, status: 'complete'\|'partial'\|'missed'\|'planned'\|'empty' }]` |
+
+**One-time tasks**
+
+| Method | Path | Body / Query | Response |
+|--------|------|--------------|----------|
+| GET | `/tasks` | `?from=YYYY-MM-DD&to=YYYY-MM-DD` | `200 OneTimeTask[]` sorted by date and time |
+| POST | `/tasks` | `{ title, date, time }` | `201 OneTimeTask` |
+| PATCH | `/tasks/:id` | `{ title?, date?, time?, done? }` | `200 OneTimeTask` |
+| DELETE | `/tasks/:id` | — | `204` |
+
+**Missions**
+
+| Method | Path | Body | Response |
+|--------|------|------|----------|
+| GET | `/missions` | `?status=active\|finished\|all` | `200 Mission[]` with `progress { due, completed, rate }` and their habits |
+| POST | `/missions` | `{ title, description?, startDate, endDate, habits: [{ title, schedule }] }` (at least 1) | `201 Mission` (creates the mission and its habits in one transaction) |
+| PATCH | `/missions/:id` | `{ title?, description?, startDate?, endDate? }` | `200 Mission` |
+| DELETE | `/missions/:id` | `?deleteTasks=true\|false` | `204` |
+
+Mission tasks are added, edited and removed with the normal `/habits` endpoints, using `missionId`.
+
+**Import**
+
+| Method | Path | Body | Response |
+|--------|------|------|----------|
+| POST | `/import/progress-v01` | `{ tasks: Task[], missions: Mission[], theme?, locale? }` (v0.1 format, §7.4) | `200 { imported: { tasks, missions, habits, checkins }, skipped: [{ reason, item }], scheduleWarnings: [...] }` |
+
+`/today` returns three groups (standalone habits, mission habits, one-time tasks), the same groups v0.1 shows separately.
 
 ---
 
@@ -523,13 +693,15 @@ Request bodies are validated with **Zod** schemas from `packages/shared`.
 | Route | Page | Main content |
 |-------|------|--------------|
 | `/login`, `/register` | Auth | Forms. Redirect to `/` if already logged in. |
-| `/` | **Today** | Date switcher (‹ today ›, max 7 days back), progress bar, list of due tasks with checkboxes and streak 🔥. |
+| `/` | **Today** | Date switcher (‹ today ›, max 7 days back), daily progress ring, three groups (tasks · mission tasks · one-time tasks) with checkboxes and streak 🔥, quick-add button, small month calendar (§11.6). |
+| `/missions` | **Missions** | Mission accordion (title, dates, progress bar, %), create/edit dialog with its recurring tasks, delete with confirmation. |
+| `/calendar` | **Calendar** | Large month calendar with day badges. Clicking a day shows its tasks. |
 | `/habits` | **Tasks** | All tasks, drag to reorder, add/edit dialog, archive/delete, "Archived" tab. |
 | `/analytics` | **Analytics** | Task filter, KPI cards, daily **bar**, per-task **bar**, per-weekday **bar**, trend **line** with 3m/6m/1y tabs. |
-| `/profile` | **Profile** | Avatar, name, email (read-only), time zone, week start, theme toggle, change password, delete account. |
+| `/profile` | **Profile** | Avatar, first and last name, email (read-only), time zone, language, week start, theme toggle, change password, delete account. |
 
-Every page except auth sits inside `AppLayout`: a top bar (logo, theme toggle, avatar menu) plus side navigation
-on desktop or bottom navigation on mobile.
+Every page except auth sits inside `AppLayout`: a top bar (logo, ka/en switch, theme toggle, "AI planner — coming soon"
+button, avatar menu) plus side navigation on desktop or bottom navigation on mobile (below 820 px).
 
 ### 11.2 Task form: schedule selector
 
@@ -545,6 +717,9 @@ Days:     [Mon] [Tue] [Wed] [Thu] [Fri] [Sat] [Sun]   ← shown only for "specif
 - **Check-in toggle** uses an optimistic update on `['today', date]`. On success it invalidates `['analytics']`
   and `['habits']` (because streaks change).
 - **UI-only state** (open dialogs, selected tab) stays in React component state. No Redux needed.
+- **Guest mode:** query hooks call a `DataSource` interface with two implementations: `ApiDataSource` (logged in)
+  and `LocalDataSource` (guest, browser storage in the v0.1 format, §7.4). Components never know which one is used.
+  `LocalDataSource` reuses the pure functions from `packages/shared/src/domain`, so guests get the same rules.
 - **Auth**: the access token is kept **in memory** (an `AuthContext`), never in `localStorage`. On a 401 the API client calls
   `/auth/refresh` once, then retries the request; if refresh fails it redirects to `/login`.
 
@@ -557,6 +732,32 @@ Days:     [Mon] [Tue] [Wed] [Thu] [Fri] [Sat] [Sun]   ← shown only for "specif
 - Chart colors come from CSS variables (§12), so charts follow the theme automatically.
 - Each chart has an empty state ("No data yet — check in a few days to see your progress").
 
+### 11.5 Languages (ka / en)
+
+- Library: **i18next + react-i18next**. Files: `apps/web/src/i18n/ka.json` and `en.json`. Fill them from pro_gress
+  `app/i18n.ts` (the same keys, converted to JSON).
+- **Georgian is the default.** Order of choice: `user.locale` → `localStorage['progress-locale']` → `ka`.
+- Set `<html lang>` to the active language. Dates and numbers use `Intl.DateTimeFormat('ka-GE' | 'en-US')`.
+- **Never** hard-code text in components. A CI check fails if `ka.json` and `en.json` do not have the same keys.
+- API error `code`s are translated in the browser (`errors.NOT_DUE` …). The server never sends translated text.
+- Font: **Noto Sans Georgian** (Georgian + Latin subsets), as in v0.1.
+- Test with long Georgian titles: they must wrap and never break the layout.
+
+### 11.6 Calendar
+
+Same rules as v0.1 (pro_gress TDD §10.3 and §11). The data comes from `GET /calendar?month=YYYY-MM`.
+
+| Day | Condition | Badge |
+|-----|-----------|-------|
+| Past, `due > 0`, `completed == due` | complete | green filled circle with ✓ |
+| Past, `completed == 0` | missed | red filled circle with × |
+| Past, partly done | partial | yellow ring (conic gradient), text `completed/due` |
+| Today or future, `due > 0` | planned | number of planned tasks |
+| No tasks | empty | no badge |
+
+The grid always has 42 cells (6 weeks). Days from the previous and next month are greyed out. "Selected" and "today"
+have separate styles. Below 560 px the small calendar scrolls horizontally.
+
 ---
 
 ## 12. Light and dark mode
@@ -565,11 +766,19 @@ Days:     [Mon] [Tue] [Wed] [Thu] [Fri] [Sat] [Sun]   ← shown only for "specif
 
 **How it works:**
 
-1. Colors are defined **once** as CSS variables and Tailwind uses them:
+1. Colors are defined **once** as CSS variables and Tailwind uses them. The light values are the **Pro-gress design
+   system** (pro_gress `docs/DESIGN_SYSTEM.md`). Copy the dark values from pro_gress `app/globals.css`:
    ```css
-   :root      { --bg: #ffffff; --surface: #f6f7f9; --text: #111827; --primary: #4f46e5; --chart-1: #4f46e5; }
-   .dark      { --bg: #0f1115; --surface: #181b22; --text: #e5e7eb; --primary: #818cf8; --chart-1: #818cf8; }
+   :root {
+     --bg: #F4F5EF; --surface: #FFFFFF; --text: #17221E; --muted: #6D7772; --border: #E5E9E3;
+     --primary: #2F887A; --primary-dark: #226A5E; --mission: #7357B8;
+     --ok: /* green */; --partial: /* yellow */; --missed: /* red */;
+     --chart-1: var(--primary); --chart-mission: var(--mission);
+   }
+   .dark { /* same token names, dark values from pro_gress app/globals.css */ }
    ```
+   Keep the rest of the design system too: card radius 18–22 px, control radius 10–14 px, 4 px spacing grid,
+   max content width 1240 px, purple for everything about missions.
 2. The `dark` class on `<html>` switches the theme (`darkMode: 'class'` in Tailwind).
 3. **Avoid a flash of the wrong theme:** a small inline script in `index.html` runs before React loads.
    It reads the theme from `localStorage` and sets the class immediately.
@@ -628,6 +837,9 @@ then the code, then refactor.
 | `isDue` | Daily task is due every day · Weekly Mon/Wed/Fri is due only on those days · Before `startDate` → false · On or after archive date → false · Schedule changed mid-month: old days use the old schedule, new days use the new one |
 | `currentStreak` | No check-ins → 0 · Today not done yet doesn't break the streak · A missed due day breaks it · Non-due days are skipped (Mon/Wed/Fri example = 3) · Streak does not go before `startDate` |
 | `longestStreak` | Picks the maximum run across gaps |
+| `isDue` with mission | Mission habit is not due before the mission starts or after it ends |
+| Calendar status | complete / partial / missed / planned / empty, exactly as in §11.6 |
+| v0.1 import mapping | Each of the 4 Georgian cadence labels maps as in §7.4 · unknown label → `DAILY` · `completions[d] = false` creates no check-in · corrupt entry is skipped, not fatal |
 | Analytics | `due = 0` → `rate = null` · Week buckets respect `weekStart` · Partial current week flagged · Archived tasks counted only before archive · Future days never counted |
 | Dates | User in `Pacific/Auckland` vs `America/Los_Angeles`: "today" differs at the same instant · DST change days have no missing or duplicated date |
 
@@ -639,6 +851,9 @@ then the code, then refactor.
 - `PATCH /habits/:id` with a new schedule → past analytics unchanged, new schedule active from today.
 - Register with an existing email → `409 EMAIL_TAKEN`.
 - Refresh token reused after rotation → `401` and all of the user's sessions revoked.
+- `POST /import/progress-v01` twice with the same data → same row counts (no duplicates).
+- `DELETE /missions/:id?deleteTasks=false` → its habits remain, with `missionId = null`.
+- Mission with `endDate < startDate` → `400 VALIDATION_ERROR`.
 
 ### 14.4 E2E journeys (Playwright)
 
@@ -647,6 +862,10 @@ then the code, then refactor.
 3. Analytics shows a bar for today with the correct % and switches to the line chart for 3 months.
 4. Toggle dark mode → reload → still dark; log in on another browser → dark too.
 5. Edit profile name and time zone → Today recalculates.
+6. Switch to English → the whole UI and dates are in English → reload → still English.
+7. Put a real v0.1 `localStorage` snapshot in the browser → log in → import → missions, tasks and calendar badges match v0.1.
+8. Use the app as a guest → sign up → the guest data is in the new account.
+9. Create a mission with 2 tasks → tick them on Today → the mission progress bar updates.
 
 > Tests that depend on "today" must **freeze time** (`vi.setSystemTime` / Playwright `clock`) so they are stable.
 
@@ -670,8 +889,14 @@ todo.app/
 │  │  │  │  ├─ auth/
 │  │  │  │  ├─ today/
 │  │  │  │  ├─ habits/
-│  │  │  │  ├─ analytics/     # DailyBarChart, HabitBarChart, WeekdayBarChart, TrendLineChart
+│  │  │  │  ├─ tasks/         # one-time tasks
+│  │  │  │  ├─ missions/
+│  │  │  │  ├─ calendar/
+│  │  │  │  ├─ analytics/     # DailyBarChart, HabitBarChart, WeekdayBarChart, MissionBarChart, TrendLineChart
+│  │  │  │  ├─ import/        # v0.1 / guest import banner
 │  │  │  │  └─ profile/
+│  │  │  ├─ data/             # DataSource interface, ApiDataSource, LocalDataSource (guest)
+│  │  │  ├─ i18n/             # ka.json, en.json
 │  │  │  ├─ theme/            # ThemeProvider, tokens.css
 │  │  │  ├─ routes.tsx
 │  │  │  └─ main.tsx
@@ -684,7 +909,10 @@ todo.app/
 │     │  │  ├─ users/
 │     │  │  ├─ habits/
 │     │  │  ├─ checkins/
-│     │  │  └─ analytics/
+│     │  │  ├─ tasks/         # one-time tasks
+│     │  │  ├─ missions/
+│     │  │  ├─ import/
+│     │  │  └─ analytics/     # also /calendar
 │     │  ├─ middleware/       # requireAuth, validate, errorHandler, rateLimit
 │     │  ├─ lib/              # prisma client, jwt, errors (AppError)
 │     │  └─ server.ts
@@ -693,7 +921,7 @@ todo.app/
 │  └─ shared/                 # used by BOTH web and api
 │     └─ src/
 │        ├─ domain/           # isDue, streaks, analytics bucketing (pure + unit tested)
-│        ├─ schemas/          # Zod schemas = API contract
+│        ├─ schemas/          # Zod schemas = API contract (incl. ProgressV01ExportSchema)
 │        └─ types.ts
 ├─ docs/TDD.md                # this document
 ├─ docker-compose.yml         # local Postgres
@@ -714,12 +942,14 @@ todo.app/
 
 | Milestone | Scope | Done when |
 |-----------|-------|-----------|
-| **M0 — Setup** (2 days) | Monorepo, lint/format, CI, Docker Postgres, Prisma schema + migration, empty React app with routing and theme tokens | CI green on an empty app; `docker compose up` + `pnpm dev` works |
-| **M1 — Auth & Profile** | Register, login, refresh, logout, `/me` CRUD, profile page, **light/dark mode** | US-1..US-4 pass; E2E journey 4 passes |
+| **M0 — Setup** (2 days) | Monorepo, lint/format, CI, Docker Postgres, Prisma schema + migration, empty React app with routing, Pro-gress theme tokens, ka/en i18n setup (strings copied from pro_gress) | CI green on an empty app; `docker compose up` + `pnpm dev` works |
+| **M1 — Auth & Profile** | Register, login, refresh, logout, `/me` CRUD, profile page, **light/dark mode**, language switch | US-1..US-4, US-21 pass; E2E journeys 4 and 6 pass |
 | **M2 — Tasks** | Domain `isDue` + schedule versioning, habits CRUD, archive, reorder, Tasks page | US-5..US-9 pass |
-| **M3 — Daily check** | `/today`, check-in endpoints, streaks, Today page with optimistic toggle | US-10..US-12; E2E journeys 1–2 |
-| **M4 — Analytics** | Analytics service + endpoints, KPI cards, **bar charts**, **line chart** | US-13..US-16; E2E journey 3 |
-| **M5 — Polish & release** | Empty states, loading skeletons, accessibility pass, mobile layout, deploy | All E2E journeys green on staging |
+| **M3 — Daily check** | `/today`, check-in endpoints, streaks, one-time tasks, Today page with optimistic toggle | US-10..US-12, US-17; E2E journeys 1–2 |
+| **M3.5 — Missions & calendar** | Missions API + page, mission habits, `/calendar` + calendar badges | US-18..US-20; E2E journey 9 |
+| **M4 — Analytics** | Analytics service + endpoints, KPI cards, **bar charts** (incl. per mission), **line chart** | US-13..US-16; E2E journey 3 |
+| **M4.5 — Migration from v0.1** | Guest mode (`LocalDataSource`), v0.1 import endpoint and banner | US-22, US-23; E2E journeys 7–8 |
+| **M5 — Polish & release** | Empty states, loading skeletons, accessibility pass (focus trap, Escape closes dialogs, `aria-live` — the gaps listed in pro_gress TDD §14), mobile layout, deploy, link from the old Pro-gress site to v2 | All E2E journeys green on staging |
 
 **Parallel work:** after M0, a backend developer can work on M2/M3 APIs while a frontend developer builds pages against
 the Zod contract in `packages/shared` (with mocked responses via MSW).
@@ -730,8 +960,11 @@ the Zod contract in `packages/shared` (with mocked responses via MSW).
 
 | # | Question | Proposed default |
 |---|----------|------------------|
-| Q1 | Should users be able to log a **number** (e.g. "30 min", "10 pages") instead of only done/not done? | No for v1; possible `value` column later. |
+| Q1 | Should users be able to log a **number** (e.g. "30 min", "10 pages") instead of only done/not done? The pro_gress PRD wants quantity/duration tasks. | No for v2; add a `value` column in v2.1. |
 | Q2 | How many days back can a user edit check-ins? | 7 days. |
-| Q3 | Do we need social login (Google)? | Not in v1. |
-| Q4 | Avatar upload or URL / initials only? | Initials + optional image upload in M5. |
-| Q5 | Languages (English / Georgian)? | English first; wrap strings with i18n from the start so Georgian is easy to add. |
+| Q3 | Do we need social login (Google)? | Not in v2. |
+| Q4 | Avatar: photo upload or built-in icons? | Both, as in v0.1. Uploads go to object storage (e.g. Cloudflare R2), max 2 MB. |
+| Q5 | ~~Languages~~ | **Decided:** Georgian (default) and English from day one, as in v0.1. |
+| Q6 | Keep the pro_gress stack (Next.js + vinext on Cloudflare, Drizzle + D1) instead of React/Vite + Express + Postgres? | No. v2 needs a real backend and Postgres (the pro_gress roadmap phase 2 also names PostgreSQL). Keep Cloudflare only for hosting the frontend if the team prefers it. |
+| Q7 | Do we need the flexible "3 times a week" schedule from v0.1? | Import maps it to Mon/Wed/Fri and warns the user. Add a real `WEEKLY_TARGET` schedule in v2.1 if users ask. |
+| Q8 | Where does v2 live: keep developing in `todo.app`, or move it into `pro_gress` as its next major version? | Develop in `todo.app`; decide before release whether to move it. |
