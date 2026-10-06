@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import type { ApiErrorBody } from '@progress/shared';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 import { AppError } from '../lib/errors';
 
 export const notFound: RequestHandler = (req, _res, next) => {
@@ -12,7 +12,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof AppError) {
     error = err;
   } else if (err instanceof ZodError) {
-    error = new AppError('VALIDATION_ERROR', 'Request validation failed', err.flatten());
+    error = new AppError('VALIDATION_ERROR', 'Request validation failed', z.flattenError(err));
   } else if (err?.type === 'entity.parse.failed') {
     error = new AppError('VALIDATION_ERROR', 'Malformed JSON body');
   } else {

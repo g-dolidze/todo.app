@@ -1,10 +1,8 @@
 import request from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
-import { createApp } from '../src/app';
-import { createPrisma } from '../src/lib/prisma';
+import { db, testApp } from './helpers';
 
-const db = createPrisma(process.env.DATABASE_URL!);
-const app = createApp({ db, corsOrigins: ['http://localhost:5173'] });
+const app = testApp();
 
 afterAll(async () => {
   await db.$disconnect();

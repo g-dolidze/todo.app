@@ -8,12 +8,13 @@
     "build": "prisma generate && tsup",
     "start": "node --env-file-if-exists=.env dist/server.js",
     "typecheck": "prisma generate && tsc -p tsconfig.json",
-    "test": "prisma generate && prisma migrate deploy && vitest run",
+    "test": "prisma generate && vitest run",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/supertest": "^7.2.1",
@@ -23,12 +24,16 @@
     "tsx": "^4.23.15"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.2.1",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "@progress/shared": "workspace:*",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.1",
     "helmet": "^8.3.0",
+    "jose": "^6.2.12",
     "zod": "^4.6.5"
   }
 }

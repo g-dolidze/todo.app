@@ -8,7 +8,7 @@ const EnvSchema = z.object({
     .string()
     .default('http://localhost:5173')
     .transform((value) => value.split(',').map((origin) => origin.trim())),
-  JWT_SECRET: z.string().min(32).optional(),
+  JWT_SECRET: z.string().min(32, 'must be at least 32 characters'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
