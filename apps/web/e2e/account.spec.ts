@@ -23,6 +23,10 @@ async function login(page: Page, email: string, password = PASSWORD) {
 }
 
 async function expectNoA11yViolations(page: Page, label: string) {
+  // The theme switch fades colors over 0.25 s; measuring contrast mid-fade gives false failures.
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))),
+  );
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();

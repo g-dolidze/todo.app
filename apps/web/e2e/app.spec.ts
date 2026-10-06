@@ -27,6 +27,9 @@ for (const theme of ['light', 'dark']) {
         await expect(page.locator('html')).toHaveAttribute('lang', locale);
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
+        await page.evaluate(() =>
+          Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))),
+        );
         const results = await new AxeBuilder({ page })
           .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
           .analyze();
