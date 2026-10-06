@@ -1,0 +1,104 @@
+{
+  "app": {
+    "name": "Pro-gress",
+    "tagline": "Small steps. Big change."
+  },
+  "common": {
+    "comingSoon": "Coming soon"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "today": "Today",
+    "habits": "Habits",
+    "missions": "Missions",
+    "calendar": "Calendar",
+    "analytics": "Analytics",
+    "profile": "Profile"
+  },
+  "header": {
+    "skipToContent": "Skip to main content",
+    "switchLanguage": "Switch language to Georgian",
+    "themeToDark": "Switch to dark theme",
+    "themeToLight": "Switch to light theme",
+    "home": "Pro-gress — today's plan"
+  },
+  "today": {
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "title": "Today's tasks",
+    "progress": "Today's progress",
+    "progressValue": "{{done}} of {{total}} done",
+    "empty": {
+      "title": "Nothing planned for today",
+      "text": "Add a habit — like exercise, reading or learning something new — and it will show up here every day."
+    }
+  },
+  "habits": {
+    "title": "My habits",
+    "subtitle": "Things you do every day or on chosen weekdays.",
+    "empty": {
+      "title": "No habits yet",
+      "text": "Here you'll create habits that repeat every day or on the weekdays you choose — like exercise, reading or the gym."
+    }
+  },
+  "missions": {
+    "title": "My missions",
+    "subtitle": "Set a period and plan the daily tasks for it.",
+    "empty": {
+      "title": "No missions yet",
+      "text": "A mission is a goal with a start and an end — for example “30 days of healthy habits”."
+    }
+  },
+  "calendar": {
+    "title": "Calendar",
+    "subtitle": "Every day's result at a glance.",
+    "empty": {
+      "title": "Your calendar is empty",
+      "text": "Once you start checking off tasks, each day gets a colored badge here."
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "How you're doing — by day, week and month.",
+    "empty": {
+      "title": "No data yet",
+      "text": "Check off tasks for a few days to see your progress here."
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Your details and settings.",
+    "appearance": "Appearance",
+    "theme": {
+      "label": "Theme",
+      "LIGHT": "Light",
+      "DARK": "Dark",
+      "SYSTEM": "System"
+    },
+    "language": "Language",
+    "account": {
+      "title": "Account",
+      "soon": "Sign-in and registration are coming soon. Until then, your settings are saved in this browser."
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "This address doesn't exist or has moved.",
+    "back": "Back to today"
+  },
+  "errors": {
+    "VALIDATION_ERROR": "Please check what you entered.",
+    "UNAUTHORIZED": "Please sign in again.",
+    "NOT_FOUND": "Not found.",
+    "EMAIL_TAKEN": "This email is already in use.",
+    "DATE_IN_FUTURE": "You can't check off a future day yet.",
+    "DATE_TOO_OLD": "Only the last 7 days can be changed.",
+    "NOT_DUE": "This task isn't planned for that day.",
+    "RATE_LIMITED": "Too many attempts. Please try again shortly.",
+    "INTERNAL_ERROR": "Something went wrong. Please try again.",
+    "NETWORK": "Can't connect. Check your internet connection."
+  }
+}

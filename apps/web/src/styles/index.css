@@ -1,0 +1,114 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens — Pro-gress design system (docs/TDD.md §12, pro_gress docs/DESIGN_SYSTEM.md).
+ * Components use only these tokens, never raw colors.
+ * A few values are slightly darker/lighter than v0.1 so text meets WCAG AA (4.5:1) in both themes.
+ */
+:root {
+  color-scheme: light;
+  --bg: #f4f5ef;
+  --surface: #ffffff;
+  --surface-soft: #eef4ed;
+  --fg: #17221e;
+  --muted: #5e6863; /* v0.1: #6d7772 (4.2:1, too low) */
+  --line: #e5e9e3;
+  --primary: #27786b; /* text and buttons; v0.1 #2f887a was 3.9:1 */
+  --primary-accent: #2f887a; /* decorative: rings, bars, marks */
+  --primary-strong: #226a5e;
+  --primary-soft: #dcece7;
+  --on-primary: #ffffff;
+  --mission: #7357b8;
+  --mission-soft: #ece6fa;
+  --ok: #2f887a;
+  --partial: #e0a526;
+  --missed: #d4545c;
+  --avatar: #e2c7aa;
+  --on-avatar: #59422d;
+  --shadow: 0 14px 40px rgb(28 55 44 / 0.07);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #101715;
+  --surface: #18211e;
+  --surface-soft: #202d29;
+  --fg: #edf5f1;
+  --muted: #9eaaa4;
+  --line: #2d3935;
+  --primary: #4fb3a1;
+  --primary-accent: #3fa391;
+  --primary-strong: #6cc7b6;
+  --primary-soft: #203c35;
+  --on-primary: #0d1a16;
+  --mission: #9d86e0;
+  --mission-soft: #2b2540;
+  --ok: #3fa391;
+  --partial: #ffd36f;
+  --missed: #f2a1a7;
+  --avatar: #4a3a2c;
+  --on-avatar: #f0d9c2;
+  --shadow: 0 18px 44px rgb(0 0 0 / 0.22);
+}
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-accent: var(--primary-accent);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+  --color-mission: var(--mission);
+  --color-mission-soft: var(--mission-soft);
+  --color-ok: var(--ok);
+  --color-partial: var(--partial);
+  --color-missed: var(--missed);
+  --color-avatar: var(--avatar);
+  --color-on-avatar: var(--on-avatar);
+  --shadow-card: var(--shadow);
+  --radius-card: 20px;
+  --radius-control: 12px;
+  --font-sans: 'Noto Sans Georgian', system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-bg text-fg font-sans antialiased;
+    transition:
+      background-color 0.25s ease,
+      color 0.25s ease;
+  }
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent);
+    outline-offset: 3px;
+  }
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Navigation switches from bottom bar to top bar at 820px, like Pro-gress v0.1. */
+@theme {
+  --breakpoint-nav: 51.25rem;
+}

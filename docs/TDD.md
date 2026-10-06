@@ -115,7 +115,7 @@ Existing users bring their data with the **one-time import from localStorage** (
 
 | Term | Meaning |
 |------|---------|
-| **Task** (in code: `Habit`) | Something the user wants to do regularly, e.g. "Go to the gym". We call it `Habit` in code so it isn't confused with one-off to-dos. |
+| **Habit** (ka: ჩვევა) | Something the user wants to do regularly, e.g. "Go to the gym". Called a *habit* in the UI and in code, so it isn't confused with one-time tasks. (The user stories below sometimes say "task" for a habit.) |
 | **Schedule** | Which days a task is due: `DAILY`, or `WEEKLY` with a list of weekdays. |
 | **Due day** | A calendar date when the task is scheduled. |
 | **Check-in** | A record that the user completed a task on a given date. |
@@ -185,18 +185,18 @@ Existing users bring their data with the **one-time import from localStorage** (
 | Layer | Choice | Why |
 |-------|--------|-----|
 | Language | **TypeScript** everywhere | One language and shared types between frontend and backend. |
-| Frontend | **React 18 + Vite** | Fast dev server, widely known. |
+| Frontend | **React 19 + Vite 8** | Fast dev server, widely known. |
 | Routing | **React Router** | Standard. |
 | Server state | **TanStack Query** | Caching and optimistic updates for check-ins. |
 | Forms / validation | **React Hook Form + Zod** | The same Zod schemas validate on the server (shared package). |
-| Styling | **Tailwind CSS** (`darkMode: 'class'`) | Easy light/dark theming. |
+| Styling | **Tailwind CSS 4** with a `dark` variant on `[data-theme='dark']` | Easy light/dark theming. |
 | Charts | **Recharts** | Has `BarChart` and `LineChart` built in, responsive, works with React. |
-| Backend | **Node.js 20 + Express** | Simple and well known. |
-| ORM | **Prisma** | Type-safe DB access and migrations. |
+| Backend | **Node.js 22 + Express 5** | Simple and well known. Express 5 forwards async errors to the error handler. |
+| ORM | **Prisma 7** (`prisma-client` generator + `@prisma/adapter-pg`) | Type-safe DB access and migrations. Business-rule `CHECK` constraints are added by hand in the migration SQL. |
 | Database | **PostgreSQL 16** | Relational data with good date support. |
 | Auth | JWT access token plus refresh token in an **httpOnly cookie** | See §13. |
 | Testing | **Vitest**, **Supertest**, **React Testing Library**, **Playwright**, **Storybook**, **axe**, **Lighthouse CI** | See §14. |
-| Tooling | pnpm workspaces, ESLint, Prettier, Husky | Monorepo with shared code. |
+| Tooling | pnpm workspaces, ESLint, Prettier | Monorepo with shared code. |
 | CI | GitHub Actions | Lint, typecheck and tests on every PR. |
 | Deploy | Frontend: Vercel. Backend and DB: Render or Railway. | Cheap and easy to start with. |
 
@@ -696,7 +696,7 @@ Mission tasks are added, edited and removed with the normal `/habits` endpoints,
 | `/` | **Today** | Date switcher (‹ today ›, max 7 days back), daily progress ring, three groups (tasks · mission tasks · one-time tasks) with checkboxes and streak 🔥, quick-add button, small month calendar (§11.6). |
 | `/missions` | **Missions** | Mission accordion (title, dates, progress bar, %), create/edit dialog with its recurring tasks, delete with confirmation. |
 | `/calendar` | **Calendar** | Large month calendar with day badges. Clicking a day shows its tasks. |
-| `/habits` | **Tasks** | All tasks, drag to reorder, add/edit dialog, archive/delete, "Archived" tab. |
+| `/habits` | **Habits** (ka: ჩვევები) | All habits, drag to reorder, add/edit dialog, archive/delete, "Archived" tab. |
 | `/analytics` | **Analytics** | Task filter, KPI cards, daily **bar**, per-task **bar**, per-weekday **bar**, trend **line** with 3m/6m/1y tabs. |
 | `/profile` | **Profile** | Avatar, first and last name, email (read-only), time zone, language, week start, theme toggle, change password, delete account. |
 
@@ -737,7 +737,11 @@ Days:     [Mon] [Tue] [Wed] [Thu] [Fri] [Sat] [Sun]   ← shown only for "specif
 - Library: **i18next + react-i18next**. Files: `apps/web/src/i18n/ka.json` and `en.json`. Fill them from pro_gress
   `app/i18n.ts` (the same keys, converted to JSON).
 - **Georgian is the default.** Order of choice: `user.locale` → `localStorage['progress-locale']` → `ka`.
-- Set `<html lang>` to the active language. Dates and numbers use `Intl.DateTimeFormat('ka-GE' | 'en-US')`.
+- Set `<html lang>` to the active language.
+- **Dates:** many browsers (some Chromium builds, Android WebView) have **no Georgian locale data**, and
+  `Intl.DateTimeFormat('ka-GE')` silently falls back to English. So Georgian month and weekday names are built in
+  (`apps/web/src/lib/dates.ts`); English uses `Intl`. Always format dates through that module.
+- **No CSS `uppercase` on Georgian text:** browsers turn it into Mtavruli capitals. Use `[:lang(en)_&]:uppercase`.
 - **Never** hard-code text in components. A CI check fails if `ka.json` and `en.json` do not have the same keys.
 - API error `code`s are translated in the browser (`errors.NOT_DUE` …). The server never sends translated text.
 - Font: **Noto Sans Georgian** (Georgian + Latin subsets), as in v0.1.
@@ -766,22 +770,21 @@ have separate styles. Below 560 px the small calendar scrolls horizontally.
 
 **How it works:**
 
-1. Colors are defined **once** as CSS variables and Tailwind uses them. The light values are the **Pro-gress design
-   system** (pro_gress `docs/DESIGN_SYSTEM.md`). Copy the dark values from pro_gress `app/globals.css`:
-   ```css
-   :root {
-     --bg: #F4F5EF; --surface: #FFFFFF; --text: #17221E; --muted: #6D7772; --border: #E5E9E3;
-     --primary: #2F887A; --primary-dark: #226A5E; --mission: #7357B8;
-     --ok: /* green */; --partial: /* yellow */; --missed: /* red */;
-     --chart-1: var(--primary); --chart-mission: var(--mission);
-   }
-   .dark { /* same token names, dark values from pro_gress app/globals.css */ }
-   ```
+1. Colors are defined **once** as CSS variables in `apps/web/src/styles/index.css`, and Tailwind exposes them as
+   utilities (`bg-surface`, `text-muted`, `text-primary`, `bg-mission-soft` …). Values come from the **Pro-gress design
+   system** (pro_gress `docs/DESIGN_SYSTEM.md` and `app/globals.css`), with two changes for WCAG AA contrast:
+
+   | Token | v0.1 value | v2 value | Why |
+   |-------|-----------|----------|-----|
+   | `--muted` (light) | `#6D7772` | `#5E6863` | v0.1 grey text was 4.2:1 on the background (needs 4.5:1) |
+   | `--primary` (light) | `#2F887A` | `#27786B` | green text/buttons were 3.9:1; `#2F887A` stays as `--primary-accent` for rings, bars and the logo |
+   | `--primary` (dark) | `#2F887A` | `#4FB3A1` | green text on the dark background needs to be lighter |
    Keep the rest of the design system too: card radius 18–22 px, control radius 10–14 px, 4 px spacing grid,
    max content width 1240 px, purple for everything about missions.
-2. The `dark` class on `<html>` switches the theme (`darkMode: 'class'` in Tailwind).
+2. `data-theme="dark"` on `<html>` switches the theme (same attribute as v0.1). Tailwind's `dark:` variant targets it.
 3. **Avoid a flash of the wrong theme:** a small inline script in `index.html` runs before React loads.
-   It reads the theme from `localStorage` and sets the class immediately.
+   It reads `localStorage['progress-theme']` (`light` | `dark` | `system`, compatible with v0.1) and sets the attribute
+   immediately. The header button switches light ↔ dark; the profile page also offers "System".
 4. After login, the **server value** (`user.theme`) is the source of truth. It is copied to `localStorage` and applied.
 5. Toggling the theme updates the UI instantly, saves to `localStorage`, and sends `PATCH /me { theme }`.
 6. With `SYSTEM`, listen to `matchMedia('(prefers-color-scheme: dark)')` changes and update live.
@@ -975,9 +978,9 @@ todo.app/
 
 | Milestone | Scope | Done when |
 |-----------|-------|-----------|
-| **M0 — Setup** (2 days) | Monorepo, lint/format, CI, Docker Postgres, Prisma schema + migration, empty React app with routing, Pro-gress theme tokens, ka/en i18n setup (strings copied from pro_gress) | CI green on an empty app; `docker compose up` + `pnpm dev` works |
-| **M1 — Auth & Profile** | Register, login, refresh, logout, `/me` CRUD, profile page, **light/dark mode**, language switch | US-1..US-4, US-21 pass; E2E journeys 4 and 6 pass |
-| **M2 — Tasks** | Domain `isDue` + schedule versioning, habits CRUD, archive, reorder, Tasks page | US-5..US-9 pass |
+| **M0 — Setup** ✅ done | Monorepo, lint/format, CI, Docker Postgres, Prisma schema + migration, empty React app with routing, Pro-gress theme tokens, ka/en i18n setup (strings copied from pro_gress) | CI green on an empty app; `docker compose up` + `pnpm dev` works |
+| **M1 — Auth & Profile** | Register, login, refresh, logout, `/me` CRUD, profile page, save theme and language to the profile, Storybook + visual regression + Lighthouse CI steps (§14.5) | US-1..US-4, US-21 pass; E2E journeys 4 and 6 pass |
+| **M2 — Habits** | Domain `isDue` + schedule versioning, habits CRUD, archive, reorder, Habits page | US-5..US-9 pass |
 | **M3 — Daily check** | `/today`, check-in endpoints, streaks, one-time tasks, Today page with optimistic toggle | US-10..US-12, US-17; E2E journeys 1–2 |
 | **M3.5 — Missions & calendar** | Missions API + page, mission habits, `/calendar` + calendar badges | US-18..US-20; E2E journey 9 |
 | **M4 — Analytics** | Analytics service + endpoints, KPI cards, **bar charts** (incl. per mission), **line chart** | US-13..US-16; E2E journey 3 |

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ka">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Pro-gress — ყოველდღიური ჩვევები, მისიები და პროგრესის ანალიზი."
+    />
+    <meta name="theme-color" content="#f4f5ef" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#101715" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Pro-gress</title>
+    <script>
+      // Apply theme and language before the first paint, so there is no flash (TDD §12).
+      // Keep in sync with src/theme/theme.ts and src/i18n/index.ts.
+      (function () {
+        var theme = 'system',
+          locale = 'ka';
+        try {
+          theme = localStorage.getItem('progress-theme') || 'system';
+          locale = localStorage.getItem('progress-locale') === 'en' ? 'en' : 'ka';
+        } catch (e) {}
+        var dark =
+          theme === 'dark' ||
+          (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        document.documentElement.lang = locale;
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

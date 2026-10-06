@@ -1,0 +1,154 @@
+// Data model — see docs/TDD.md §7.
+// Every user-owned table has user_id (directly or through its parent) and cascades on delete.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Locale {
+  KA
+  EN
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum ScheduleType {
+  DAILY
+  WEEKLY
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique // stored lowercase
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  avatar       String? // image URL or built-in icon name
+  timezone     String   @default("Asia/Tbilisi") // IANA
+  locale       Locale   @default(KA)
+  theme        Theme    @default(SYSTEM)
+  weekStart    Int      @default(1) @map("week_start") @db.SmallInt // 1 = Mon, 7 = Sun
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  habits        Habit[]
+  missions      Mission[]
+  oneTimeTasks  OneTimeTask[]
+  refreshTokens RefreshToken[]
+
+  @@map("user")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_token")
+}
+
+model Mission {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  title       String
+  description String?
+  startDate   DateTime @map("start_date") @db.Date
+  endDate     DateTime @map("end_date") @db.Date
+  legacyId    String?  @map("legacy_id") // Pro-gress v0.1 id (TDD §7.4)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habits Habit[]
+
+  @@unique([userId, legacyId])
+  @@index([userId, endDate])
+  @@map("mission")
+}
+
+model OneTimeTask {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  title     String
+  date      DateTime  @db.Date // user local date
+  time      String    @db.Char(5) // HH:mm
+  doneAt    DateTime? @map("done_at") @db.Timestamptz
+  legacyId  String?   @map("legacy_id")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, legacyId])
+  @@index([userId, date, time])
+  @@map("one_time_task")
+}
+
+model Habit {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  missionId   String?   @map("mission_id") @db.Uuid
+  title       String
+  description String?
+  icon        String?
+  color       String? // hex
+  sortOrder   Int       @default(0) @map("sort_order")
+  startDate   DateTime  @map("start_date") @db.Date
+  archivedAt  DateTime? @map("archived_at") @db.Timestamptz
+  legacyId    String?   @map("legacy_id")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission   Mission?        @relation(fields: [missionId], references: [id], onDelete: SetNull)
+  schedules HabitSchedule[]
+  checkins  Checkin[]
+
+  @@unique([userId, legacyId])
+  @@index([userId, archivedAt, sortOrder])
+  @@index([missionId])
+  @@map("habit")
+}
+
+/// Schedules are versioned so past statistics never change (TDD §7.3).
+model HabitSchedule {
+  id        String       @id @default(uuid()) @db.Uuid
+  habitId   String       @map("habit_id") @db.Uuid
+  type      ScheduleType
+  weekdays  Int[]        @db.SmallInt // ISO 1..7, empty when DAILY
+  validFrom DateTime     @map("valid_from") @db.Date
+  validTo   DateTime?    @map("valid_to") @db.Date // null = current version
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@index([habitId, validFrom])
+  @@map("habit_schedule")
+}
+
+/// A row means "done". Missed days are calculated, never stored (TDD §7.2).
+model Checkin {
+  id        String   @id @default(uuid()) @db.Uuid
+  habitId   String   @map("habit_id") @db.Uuid
+  date      DateTime @db.Date // user local date
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@map("checkin")
+}
