@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft v1.1 — ready for team review |
+| **Status** | v1.2 — **Approved**. Key decisions are final (§17). |
 | **Owner** | Team Lead |
 | **Audience** | Frontend, backend and QA developers |
 | **Repository** | `g-dolidze/todo.app` |
@@ -26,7 +26,7 @@
 11. [Frontend](#11-frontend)
 12. [Light and dark mode](#12-light-and-dark-mode)
 13. [Authentication and security](#13-authentication-and-security)
-14. [Testing strategy](#14-testing-strategy)
+14. [Testing strategy and quality bar](#14-testing-strategy-and-quality-bar)
 15. [Project structure](#15-project-structure)
 16. [Delivery plan](#16-delivery-plan)
 17. [Open questions](#17-open-questions)
@@ -195,7 +195,7 @@ Existing users bring their data with the **one-time import from localStorage** (
 | ORM | **Prisma** | Type-safe DB access and migrations. |
 | Database | **PostgreSQL 16** | Relational data with good date support. |
 | Auth | JWT access token plus refresh token in an **httpOnly cookie** | See §13. |
-| Testing | **Vitest**, **Supertest**, **React Testing Library**, **Playwright** | See §14. |
+| Testing | **Vitest**, **Supertest**, **React Testing Library**, **Playwright**, **Storybook**, **axe**, **Lighthouse CI** | See §14. |
 | Tooling | pnpm workspaces, ESLint, Prettier, Husky | Monorepo with shared code. |
 | CI | GitHub Actions | Lint, typecheck and tests on every PR. |
 | Deploy | Frontend: Vercel. Backend and DB: Render or Railway. | Cheap and easy to start with. |
@@ -816,7 +816,7 @@ flowchart LR
 
 ---
 
-## 14. Testing strategy
+## 14. Testing strategy and quality bar
 
 We use **test-driven development** for the domain logic and the API: **write the failing test first**,
 then the code, then refactor.
@@ -871,8 +871,41 @@ then the code, then refactor.
 
 ### 14.5 CI (GitHub Actions, on every PR)
 
-`pnpm install` → `lint` → `typecheck` → `test:unit` → `test:api` (Postgres service container) → `build` → `test:e2e`.
+`pnpm install` → `lint` → `typecheck` → `i18n:check` → `test:unit` → `test:api` (Postgres service container) → `build`
+→ `test:e2e` → `test:visual` → `lighthouse`.
 **A PR cannot be merged unless CI is green** and at least one teammate has approved it.
+
+### 14.6 Quality bar: "looks good and works perfectly"
+
+The product owner's top requirement is that the app **looks polished and has no bugs**. These rules make that
+measurable. **A feature is not done until it passes all of them.**
+
+**Looks good**
+
+| Rule | How we check it |
+|------|-----------------|
+| Every UI component is built and reviewed in **Storybook** in all 4 combinations: light/dark × ka/en. | Storybook build in CI; the designer or team lead approves new components. |
+| **Visual regression tests:** Playwright screenshots of every page at **320, 768 and 1440 px**, light and dark, ka and en. | `test:visual` fails on any unexpected pixel change. Intended changes update the baseline in the same PR. |
+| Only design tokens (§12): no raw colors, font sizes or spacing in components. | ESLint rule + review. |
+| Every screen has **loading** (skeletons, not spinners), **empty** (friendly text + action button) and **error** (message + "Try again") states. | Storybook story for each state. |
+| Smooth feedback: ticking a task animates the checkbox and the progress ring (≤ 200 ms). Charts animate in. Everything respects `prefers-reduced-motion`. | Manual review + component test for reduced motion. |
+| Long Georgian titles, 0 tasks, 50 tasks and 1 year of data all look right. | Seeded test data sets: `empty`, `typical`, `heavy` (`pnpm db:seed --preset=heavy`). |
+| Touch targets ≥ 44 × 44 px; no horizontal scrolling at 320 px. | Playwright check on mobile size. |
+
+**Works perfectly**
+
+| Rule | How we check it |
+|------|-----------------|
+| Domain logic coverage ≥ 95 %; every endpoint has integration tests (§14.1). | Coverage report in CI. |
+| **Accessibility:** no `axe` violations; full keyboard use; focus trap and Escape in dialogs; WCAG AA contrast in both themes. | `@axe-core/playwright` in E2E. |
+| **Performance:** LCP < 2.5 s, CLS < 0.1, INP < 200 ms on a mid-range phone; Lighthouse ≥ 95 for Performance, Accessibility and Best Practices. | Lighthouse CI on every PR. |
+| No errors or warnings in the browser console and no unhandled server errors during E2E runs. | E2E fails if any console error appears. |
+| A failed request never loses user input: optimistic updates roll back with a toast, and forms keep their values. | Component tests with mocked failures (MSW). |
+| Monitoring in production: errors are reported (Sentry, without personal data) and the team is alerted. | Set up in M5. |
+
+**Definition of done (every PR):** the business rule is written in this document → tests written first →
+code → all checks above pass → screenshots of the change (light + dark, mobile + desktop) attached to the PR →
+this document is updated if the behaviour changed.
 
 ---
 
@@ -965,6 +998,6 @@ the Zod contract in `packages/shared` (with mocked responses via MSW).
 | Q3 | Do we need social login (Google)? | Not in v2. |
 | Q4 | Avatar: photo upload or built-in icons? | Both, as in v0.1. Uploads go to object storage (e.g. Cloudflare R2), max 2 MB. |
 | Q5 | ~~Languages~~ | **Decided:** Georgian (default) and English from day one, as in v0.1. |
-| Q6 | Keep the pro_gress stack (Next.js + vinext on Cloudflare, Drizzle + D1) instead of React/Vite + Express + Postgres? | No. v2 needs a real backend and Postgres (the pro_gress roadmap phase 2 also names PostgreSQL). Keep Cloudflare only for hosting the frontend if the team prefers it. |
+| Q6 | ~~Keep the pro_gress stack (Next.js + vinext on Cloudflare, Drizzle + D1)?~~ | **Decided:** no. v2 uses the stack in §5 (React + Vite, Express, PostgreSQL), because it needs a real backend and database. The pro_gress roadmap (phase 2) also planned PostgreSQL. |
 | Q7 | Do we need the flexible "3 times a week" schedule from v0.1? | Import maps it to Mon/Wed/Fri and warns the user. Add a real `WEEKLY_TARGET` schedule in v2.1 if users ask. |
-| Q8 | Where does v2 live: keep developing in `todo.app`, or move it into `pro_gress` as its next major version? | Develop in `todo.app`; decide before release whether to move it. |
+| Q8 | ~~Where does v2 live?~~ | **Decided:** v2 is built in `todo.app`. `pro_gress` stays online unchanged until v2 is released; then its site shows a banner linking to v2 and explaining the data import (§7.4). |
