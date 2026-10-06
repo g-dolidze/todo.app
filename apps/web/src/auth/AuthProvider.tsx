@@ -39,7 +39,8 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [status, setStatus] = useState<Status>('loading');
+  // Guests have no session cookie: they are known to be guests right away, with no request.
+  const [status, setStatus] = useState<Status>(() => (hasSessionHint() ? 'loading' : 'guest'));
   const [user, setUser] = useState<UserDto | null>(null);
   const queryClient = useQueryClient();
   const { setPreference } = useTheme();
@@ -77,11 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    // Guests have no session cookie: don't make a request that can only fail.
-    if (!hasSessionHint()) {
-      setStatus('guest');
-      return;
-    }
+    if (!hasSessionHint()) return;
     refreshSession()
       .then(startSession)
       .catch(() => setStatus('guest'));
