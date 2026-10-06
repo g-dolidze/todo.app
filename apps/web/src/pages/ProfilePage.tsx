@@ -1,9 +1,35 @@
-import { THEMES, type Locale, type ThemePreference } from '@progress/shared';
-import { useId } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  AVATAR_ICONS,
+  ChangePasswordSchema,
+  DeleteMeSchema,
+  ProfileDetailsSchema,
+  THEMES,
+  type ChangePasswordInput,
+  type DeleteMeInput,
+  type Locale,
+  type ProfileDetailsInput,
+  type ThemePreference,
+  type UserDto,
+} from '@progress/shared';
+import { useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router';
+import { useAuth } from '../auth/AuthProvider';
+import { applyServerErrors, errorKey } from '../auth/forms';
+import { usePreferences } from '../auth/usePreferences';
+import { Avatar, AVATAR_ICON_NAMES } from '../components/Avatar';
 import { Card } from '../components/Card';
 import { Icon, type IconName } from '../components/Icon';
 import { PageHeader } from '../components/PageHeader';
+import { Button, buttonClass } from '../components/ui/Button';
+import { Dialog } from '../components/ui/Dialog';
+import { FormAlert } from '../components/ui/FormAlert';
+import { Segmented } from '../components/ui/Segmented';
+import { inputClass, PasswordField, TextField } from '../components/ui/TextField';
+import { useToast } from '../components/ui/Toast';
+import { formatFullDate } from '../lib/dates';
 import { useTheme } from '../theme/ThemeProvider';
 
 const THEME_ICONS: Record<ThemePreference, IconName> = {
@@ -12,103 +38,447 @@ const THEME_ICONS: Record<ThemePreference, IconName> = {
   SYSTEM: 'monitor',
 };
 
-const LANGUAGES: { value: Locale; label: string }[] = [
-  { value: 'ka', label: 'ქართული' },
-  { value: 'en', label: 'English' },
+const LANGUAGES: { value: Locale; label: string; lang: string }[] = [
+  { value: 'ka', label: 'ქართული', lang: 'ka' },
+  { value: 'en', label: 'English', lang: 'en' },
 ];
 
-interface Option<T extends string> {
-  value: T;
-  label: string;
-  icon?: IconName;
-  lang?: string;
+function CardTitle({ id, children }: { id: string; children: string }) {
+  return (
+    <h2 id={id} className="mb-5 text-lg font-bold tracking-tight">
+      {children}
+    </h2>
+  );
 }
 
-/** Accessible segmented control built on native radio buttons. */
-function Segmented<T extends string>({
-  legend,
-  value,
-  options,
-  onChange,
-}: {
-  legend: string;
-  value: T;
-  options: Option<T>[];
-  onChange: (value: T) => void;
-}) {
-  const name = useId();
+function AppearanceCard() {
+  const { t, i18n } = useTranslation();
+  const { preference } = useTheme();
+  const { setTheme, setLocale } = usePreferences();
+
   return (
-    <fieldset>
-      <legend className="mb-3 text-sm font-semibold text-fg">{legend}</legend>
-      <div className="grid auto-cols-fr grid-flow-col gap-1 rounded-[14px] bg-surface-soft p-1">
-        {options.map((option) => (
-          <label
-            key={option.value}
-            className="relative flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-control px-3 text-sm font-semibold text-muted transition has-checked:bg-surface has-checked:text-fg has-checked:shadow-sm has-focus-visible:outline-3 has-focus-visible:outline-primary/45"
-          >
-            <input
-              type="radio"
-              name={name}
-              value={option.value}
-              checked={value === option.value}
-              onChange={() => onChange(option.value)}
-              className="sr-only"
-            />
-            {option.icon && <Icon name={option.icon} size={18} />}
-            <span lang={option.lang}>{option.label}</span>
-          </label>
-        ))}
+    <Card aria-labelledby="appearance">
+      <CardTitle id="appearance">{t('profile.appearance')}</CardTitle>
+      <div className="space-y-6">
+        <Segmented
+          legend={t('profile.theme.label')}
+          value={preference}
+          onChange={setTheme}
+          options={THEMES.map((theme) => ({
+            value: theme,
+            label: t(`profile.theme.${theme}`),
+            icon: THEME_ICONS[theme],
+          }))}
+        />
+        <Segmented
+          legend={t('profile.language')}
+          value={i18n.language === 'en' ? 'en' : 'ka'}
+          onChange={setLocale}
+          options={LANGUAGES}
+        />
       </div>
-    </fieldset>
+    </Card>
+  );
+}
+
+function GuestCard() {
+  const { t } = useTranslation();
+  return (
+    <Card aria-labelledby="guest-account" className="flex flex-col">
+      <CardTitle id="guest-account">{t('profile.guest.title')}</CardTitle>
+      <div className="flex items-start gap-4">
+        <Avatar user={null} size="md" />
+        <p className="text-sm leading-relaxed text-muted">{t('profile.guest.text')}</p>
+      </div>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link to="/register" className={buttonClass('primary')}>
+          {t('profile.guest.register')}
+        </Link>
+        <Link to="/login" className={buttonClass('secondary')}>
+          {t('profile.guest.signIn')}
+        </Link>
+      </div>
+    </Card>
+  );
+}
+
+function IdentityCard({ user }: { user: UserDto }) {
+  const { t, i18n } = useTranslation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [leaving, setLeaving] = useState(false);
+  const since = formatFullDate(new Date(user.createdAt), i18n.language === 'en' ? 'en' : 'ka');
+
+  return (
+    <Card className="flex flex-col gap-5 sm:flex-row sm:items-center">
+      <Avatar user={user} size="lg" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xl font-extrabold tracking-tight">
+          {user.firstName} {user.lastName}
+        </p>
+        <p className="truncate text-muted">{user.email}</p>
+        <p className="mt-1 text-sm text-muted">{t('profile.memberSince', { date: since })}</p>
+      </div>
+      <Button
+        variant="secondary"
+        loading={leaving}
+        onClick={async () => {
+          setLeaving(true);
+          await logout();
+          navigate('/', { replace: true });
+        }}
+      >
+        <Icon name="logout" size={18} />
+        {t('profile.logout')}
+      </Button>
+    </Card>
+  );
+}
+
+function timeZones(current: string): string[] {
+  let zones: string[] = [];
+  try {
+    zones = Intl.supportedValuesOf('timeZone');
+  } catch {
+    // Very old browser: only the current zone is offered.
+  }
+  return zones.includes(current) ? zones : [current, ...zones];
+}
+
+function DetailsCard({ user }: { user: UserDto }) {
+  const { t } = useTranslation();
+  const { updateMe } = useAuth();
+  const toast = useToast();
+  const [formError, setFormError] = useState<string | null>(null);
+  const zones = useMemo(() => timeZones(user.timezone), [user.timezone]);
+  const {
+    register,
+    control,
+    handleSubmit,
+    setError,
+    reset,
+    formState: { errors, isSubmitting, isDirty, dirtyFields },
+  } = useForm<ProfileDetailsInput>({
+    resolver: zodResolver(ProfileDetailsSchema),
+    mode: 'onTouched',
+    defaultValues: {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatar: user.avatar,
+      timezone: user.timezone,
+      weekStart: user.weekStart,
+    },
+  });
+
+  const onSubmit = handleSubmit(async (values) => {
+    setFormError(null);
+    // Send only what changed.
+    const changed = Object.fromEntries(
+      Object.entries(values).filter(([key]) => dirtyFields[key as keyof ProfileDetailsInput]),
+    );
+    try {
+      const updated = await updateMe(changed);
+      reset({
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        avatar: updated.avatar,
+        timezone: updated.timezone,
+        weekStart: updated.weekStart,
+      });
+      toast(t('profile.saved'));
+    } catch (error) {
+      if (!applyServerErrors(error, setError)) setFormError(t(errorKey(error)));
+    }
+  });
+
+  return (
+    <Card aria-labelledby="details">
+      <CardTitle id="details">{t('profile.details.title')}</CardTitle>
+      <form onSubmit={onSubmit} noValidate className="space-y-5">
+        {formError && <FormAlert>{formError}</FormAlert>}
+
+        <Controller
+          control={control}
+          name="avatar"
+          render={({ field }) => (
+            <fieldset>
+              <legend className="mb-2 text-sm font-semibold">{t('profile.avatar.label')}</legend>
+              <div className="flex flex-wrap gap-2">
+                {[null, ...AVATAR_ICONS].map((icon) => {
+                  const label = icon ? t(`profile.avatar.${icon}`) : t('profile.avatar.initials');
+                  return (
+                    <label
+                      key={icon ?? 'initials'}
+                      title={label}
+                      className="cursor-pointer rounded-full p-0.5 ring-2 ring-transparent transition has-checked:ring-primary has-focus-visible:outline-3 has-focus-visible:outline-primary/45"
+                    >
+                      <input
+                        type="radio"
+                        name={field.name}
+                        className="sr-only"
+                        checked={field.value === icon}
+                        onChange={() => field.onChange(icon)}
+                        aria-label={label}
+                      />
+                      {icon ? (
+                        <span className="grid size-11 place-items-center rounded-full bg-primary-soft text-primary">
+                          <Icon name={AVATAR_ICON_NAMES[icon]} size={20} />
+                        </span>
+                      ) : (
+                        <Avatar user={{ ...user, avatar: null }} />
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+          )}
+        />
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <TextField
+            label={t('fields.firstName')}
+            autoComplete="given-name"
+            error={errors.firstName?.message}
+            {...register('firstName')}
+          />
+          <TextField
+            label={t('fields.lastName')}
+            autoComplete="family-name"
+            error={errors.lastName?.message}
+            {...register('lastName')}
+          />
+        </div>
+
+        <TextField
+          label={t('fields.email')}
+          type="email"
+          value={user.email}
+          readOnly
+          disabled
+          hint={t('profile.details.emailNote')}
+        />
+
+        <div>
+          <label htmlFor="timezone" className="mb-1.5 block text-sm font-semibold">
+            {t('fields.timezone')}
+          </label>
+          <select id="timezone" className={`${inputClass} border-line`} {...register('timezone')}>
+            {zones.map((zone) => (
+              <option key={zone} value={zone}>
+                {zone.replaceAll('_', ' ')}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <Controller
+          control={control}
+          name="weekStart"
+          render={({ field }) => (
+            <Segmented
+              legend={t('fields.weekStart')}
+              value={field.value}
+              onChange={field.onChange}
+              options={[
+                { value: 1, label: t('fields.monday') },
+                { value: 7, label: t('fields.sunday') },
+              ]}
+            />
+          )}
+        />
+
+        <div className="flex justify-end">
+          <Button type="submit" loading={isSubmitting} disabled={!isDirty}>
+            {t('profile.save')}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+}
+
+function PasswordCard() {
+  const { t } = useTranslation();
+  const { changePassword } = useAuth();
+  const toast = useToast();
+  const [formError, setFormError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ChangePasswordInput>({
+    resolver: zodResolver(ChangePasswordSchema),
+    mode: 'onTouched',
+  });
+
+  const onSubmit = handleSubmit(async (values) => {
+    setFormError(null);
+    try {
+      await changePassword(values);
+      reset({ currentPassword: '', newPassword: '' });
+      toast(t('profile.password.changed'));
+    } catch (error) {
+      if (!applyServerErrors(error, setError)) setFormError(t(errorKey(error)));
+    }
+  });
+
+  return (
+    <Card aria-labelledby="password">
+      <CardTitle id="password">{t('profile.password.title')}</CardTitle>
+      <form onSubmit={onSubmit} noValidate className="space-y-5">
+        {formError && <FormAlert>{formError}</FormAlert>}
+        <PasswordField
+          label={t('fields.currentPassword')}
+          autoComplete="current-password"
+          error={errors.currentPassword?.message}
+          {...register('currentPassword')}
+        />
+        <PasswordField
+          label={t('fields.newPassword')}
+          autoComplete="new-password"
+          hint={t('auth.register.passwordHint')}
+          error={errors.newPassword?.message}
+          {...register('newPassword')}
+        />
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted">{t('profile.password.note')}</p>
+          <Button type="submit" variant="secondary" loading={isSubmitting} className="shrink-0">
+            {t('profile.password.submit')}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+}
+
+function DeleteAccountCard() {
+  const { t } = useTranslation();
+  const { deleteAccount } = useAuth();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<DeleteMeInput>({ resolver: zodResolver(DeleteMeSchema) });
+
+  const close = () => {
+    setOpen(false);
+    setFormError(null);
+    reset({ password: '' });
+  };
+
+  const onSubmit = handleSubmit(async (values) => {
+    setFormError(null);
+    try {
+      await deleteAccount(values);
+      toast(t('profile.danger.deleted'));
+      navigate('/', { replace: true });
+    } catch (error) {
+      if (!applyServerErrors(error, setError)) setFormError(t(errorKey(error)));
+    }
+  });
+
+  return (
+    <Card aria-labelledby="danger" className="border-danger/30">
+      <h2 id="danger" className="text-lg font-bold tracking-tight text-danger">
+        {t('profile.danger.title')}
+      </h2>
+      <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted">{t('profile.danger.text')}</p>
+        <Button variant="danger" className="shrink-0" onClick={() => setOpen(true)}>
+          <Icon name="trash" size={18} />
+          {t('profile.danger.button')}
+        </Button>
+      </div>
+
+      <Dialog
+        open={open}
+        onClose={close}
+        title={t('profile.danger.confirmTitle')}
+        description={t('profile.danger.confirmText')}
+      >
+        <form onSubmit={onSubmit} noValidate className="space-y-5">
+          {formError && <FormAlert>{formError}</FormAlert>}
+          <PasswordField
+            label={t('fields.password')}
+            autoComplete="current-password"
+            autoFocus
+            error={errors.password?.message}
+            {...register('password')}
+          />
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button variant="secondary" onClick={close}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" variant="danger" loading={isSubmitting}>
+              {t('profile.danger.confirm')}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    </Card>
+  );
+}
+
+function Skeleton() {
+  return (
+    <div className="grid gap-5 lg:grid-cols-2" aria-hidden="true">
+      {[0, 1].map((key) => (
+        <Card key={key} className="h-64 animate-pulse">
+          <div className="h-5 w-40 rounded-full bg-surface-soft" />
+          <div className="mt-6 h-11 rounded-control bg-surface-soft" />
+          <div className="mt-4 h-11 rounded-control bg-surface-soft" />
+        </Card>
+      ))}
+    </div>
   );
 }
 
 export function ProfilePage() {
-  const { t, i18n } = useTranslation();
-  const { preference, setPreference } = useTheme();
-  const locale: Locale = i18n.language === 'en' ? 'en' : 'ka';
+  const { t } = useTranslation();
+  const { status, user } = useAuth();
 
   return (
     <>
       <PageHeader title={t('profile.title')} subtitle={t('profile.subtitle')} />
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card aria-labelledby="appearance">
-          <h2 id="appearance" className="mb-5 text-lg font-bold tracking-tight">
-            {t('profile.appearance')}
-          </h2>
-          <div className="space-y-6">
-            <Segmented
-              legend={t('profile.theme.label')}
-              value={preference}
-              onChange={setPreference}
-              options={THEMES.map((theme) => ({
-                value: theme,
-                label: t(`profile.theme.${theme}`),
-                icon: THEME_ICONS[theme],
-              }))}
-            />
-            <Segmented
-              legend={t('profile.language')}
-              value={locale}
-              onChange={(next) => void i18n.changeLanguage(next)}
-              options={LANGUAGES.map((language) => ({ ...language, lang: language.value }))}
-            />
-          </div>
-        </Card>
+      {status === 'loading' && (
+        <>
+          <span className="sr-only" role="status">
+            {t('common.loading')}
+          </span>
+          <Skeleton />
+        </>
+      )}
 
-        <Card aria-labelledby="account">
-          <h2 id="account" className="mb-5 text-lg font-bold tracking-tight">
-            {t('profile.account.title')}
-          </h2>
-          <div className="flex items-start gap-4">
-            <div className="grid size-14 shrink-0 place-items-center rounded-full bg-avatar text-on-avatar">
-              <Icon name="profile" size={26} />
+      {status === 'guest' && (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <AppearanceCard />
+          <GuestCard />
+        </div>
+      )}
+
+      {status === 'authenticated' && user && (
+        <div className="space-y-5">
+          <IdentityCard user={user} />
+          <div className="grid items-start gap-5 lg:grid-cols-2">
+            <DetailsCard key={user.id} user={user} />
+            <div className="space-y-5">
+              <AppearanceCard />
+              <PasswordCard />
             </div>
-            <p className="text-sm leading-relaxed text-muted">{t('profile.account.soon')}</p>
           </div>
-        </Card>
-      </div>
+          <DeleteAccountCard />
+        </div>
+      )}
     </>
   );
 }

@@ -34,6 +34,7 @@ export class AuthService {
           lastName: input.lastName,
           timezone: input.timezone,
           locale: input.locale === 'en' ? 'EN' : 'KA',
+          ...(input.theme ? { theme: input.theme } : {}),
         },
       });
       return this.startSession(user);

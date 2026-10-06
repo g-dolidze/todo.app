@@ -4,7 +4,11 @@
     "tagline": "Small steps. Big change."
   },
   "common": {
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "cancel": "Cancel",
+    "close": "Close",
+    "loading": "Loading…",
+    "saving": "Saving…"
   },
   "nav": {
     "label": "Main navigation",
@@ -20,7 +24,8 @@
     "switchLanguage": "Switch language to Georgian",
     "themeToDark": "Switch to dark theme",
     "themeToLight": "Switch to light theme",
-    "home": "Pro-gress — today's plan"
+    "home": "Pro-gress — today's plan",
+    "signIn": "Sign in"
   },
   "today": {
     "greeting": {
@@ -79,9 +84,46 @@
       "SYSTEM": "System"
     },
     "language": "Language",
-    "account": {
-      "title": "Account",
-      "soon": "Sign-in and registration are coming soon. Until then, your settings are saved in this browser."
+    "memberSince": "Member since {{date}}",
+    "details": {
+      "title": "Personal details",
+      "emailNote": "Changing your email is coming soon."
+    },
+    "save": "Save changes",
+    "saved": "Changes saved.",
+    "avatar": {
+      "label": "Profile icon",
+      "initials": "Initials",
+      "leaf": "Leaf",
+      "sun": "Sun",
+      "mountain": "Mountain",
+      "wave": "Wave",
+      "star": "Star",
+      "flame": "Flame",
+      "book": "Book",
+      "dumbbell": "Dumbbell"
+    },
+    "password": {
+      "title": "Change password",
+      "note": "You'll be signed out on your other devices.",
+      "submit": "Change password",
+      "changed": "Password changed."
+    },
+    "logout": "Sign out",
+    "danger": {
+      "title": "Delete account",
+      "text": "All your habits, missions and history will be deleted permanently.",
+      "button": "Delete account",
+      "confirmTitle": "Delete your account?",
+      "confirmText": "This can't be undone. Enter your password to confirm.",
+      "confirm": "Delete permanently",
+      "deleted": "Your account was deleted."
+    },
+    "guest": {
+      "title": "Create an account",
+      "text": "Save your habits and progress and use them on any device.",
+      "register": "Create account",
+      "signIn": "Sign in"
     }
   },
   "notFound": {
@@ -100,5 +142,64 @@
     "RATE_LIMITED": "Too many attempts. Please try again shortly.",
     "INTERNAL_ERROR": "Something went wrong. Please try again.",
     "NETWORK": "Can't connect. Check your internet connection."
+  },
+  "fields": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "password": "Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "timezone": "Time zone",
+    "weekStart": "First day of the week",
+    "monday": "Monday",
+    "sunday": "Sunday"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to continue your progress.",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account?",
+      "toRegister": "Create one",
+      "invalid": "Wrong email or password."
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Your habits and progress — on every device.",
+      "submit": "Create account",
+      "hasAccount": "Already have an account?",
+      "toLogin": "Sign in",
+      "passwordHint": "At least 8 characters, with a letter and a number."
+    },
+    "guest": "Continue without an account",
+    "sessionEnded": "Your session ended. Please sign in again."
+  },
+  "validation": {
+    "email": {
+      "invalid": "Enter a valid email address."
+    },
+    "password": {
+      "tooShort": "Use at least 8 characters.",
+      "tooLong": "This password is too long.",
+      "letter": "Add at least one letter.",
+      "digit": "Add at least one number.",
+      "required": "Enter your password.",
+      "wrong": "That password is incorrect.",
+      "same": "Choose a password different from your current one."
+    },
+    "name": {
+      "required": "This field is required.",
+      "tooLong": "Use 50 characters or fewer."
+    },
+    "timezone": {
+      "invalid": "Choose a time zone from the list."
+    },
+    "update": {
+      "empty": "There's nothing to save."
+    },
+    "emailTaken": "This email is already registered. Try signing in."
   }
 }

@@ -1,7 +1,16 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
+import { installFakeApi } from './fakeApi';
 import i18n from '../i18n';
+
+// jsdom has no <dialog> modal support; real behaviour is covered by Playwright.
+HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+  this.setAttribute('open', '');
+};
+HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+  this.removeAttribute('open');
+};
 
 let systemDark = false;
 
@@ -13,7 +22,7 @@ export function setSystemDark(dark: boolean) {
 
 const listeners = new Set<(event: MediaQueryListEvent) => void>();
 
-vi.stubGlobal('matchMedia', (query: string) => ({
+const matchMediaStub = (query: string) => ({
   get matches() {
     return query.includes('dark') ? systemDark : false;
   },
@@ -22,7 +31,8 @@ vi.stubGlobal('matchMedia', (query: string) => ({
     listeners.add(listener),
   removeEventListener: (_: string, listener: (event: MediaQueryListEvent) => void) =>
     listeners.delete(listener),
-}));
+});
+vi.stubGlobal('matchMedia', matchMediaStub);
 
 beforeEach(async () => {
   localStorage.clear();
@@ -30,9 +40,13 @@ beforeEach(async () => {
   delete document.documentElement.dataset.theme;
   await i18n.changeLanguage('ka');
   localStorage.clear();
+  // Every test starts as a guest against an empty fake API; tests can add users.
+  installFakeApi();
 });
 
 afterEach(() => {
   cleanup();
   listeners.clear();
+  vi.unstubAllGlobals();
+  vi.stubGlobal('matchMedia', matchMediaStub);
 });

@@ -58,3 +58,11 @@ export function formatLongDate(date: Date, locale: Locale): string {
   const name = weekdayName(weekday, locale);
   return locale === 'ka' ? `${name}, ${day} ${month}` : `${name}, ${month} ${day}`;
 }
+
+/** "6 ოქტომბერი 2026" / "October 6, 2026" */
+export function formatFullDate(date: Date, locale: Locale): string {
+  const month = monthName(date.getMonth(), locale);
+  return locale === 'ka'
+    ? `${date.getDate()} ${month} ${date.getFullYear()}`
+    : `${month} ${date.getDate()}, ${date.getFullYear()}`;
+}

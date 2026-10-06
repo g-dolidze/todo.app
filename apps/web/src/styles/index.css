@@ -23,6 +23,10 @@
   --ok: #2f887a;
   --partial: #e0a526;
   --missed: #d4545c;
+  --danger: #b4232c;
+  --on-danger: #ffffff;
+  --primary-on-dark: #6cc7b6;
+  --danger-on-dark: #f2a1a7;
   --avatar: #e2c7aa;
   --on-avatar: #59422d;
   --shadow: 0 14px 40px rgb(28 55 44 / 0.07);
@@ -46,6 +50,10 @@
   --ok: #3fa391;
   --partial: #ffd36f;
   --missed: #f2a1a7;
+  --danger: #f2a1a7;
+  --on-danger: #2a0c0f;
+  --primary-on-dark: #27786b;
+  --danger-on-dark: #b4232c;
   --avatar: #4a3a2c;
   --on-avatar: #f0d9c2;
   --shadow: 0 18px 44px rgb(0 0 0 / 0.22);
@@ -70,6 +78,10 @@
   --color-ok: var(--ok);
   --color-partial: var(--partial);
   --color-missed: var(--missed);
+  --color-danger: var(--danger);
+  --color-on-danger: var(--on-danger);
+  --color-primary-on-dark: var(--primary-on-dark);
+  --color-danger-on-dark: var(--danger-on-dark);
   --color-avatar: var(--avatar);
   --color-on-avatar: var(--on-avatar);
   --shadow-card: var(--shadow);
@@ -111,4 +123,11 @@
 /* Navigation switches from bottom bar to top bar at 820px, like Pro-gress v0.1. */
 @theme {
   --breakpoint-nav: 51.25rem;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
 }

@@ -21,7 +21,10 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
+      ],
     },
   },
   {
@@ -36,7 +39,19 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': [
         'warn',
-        { allowExportNames: ['NAV_ITEMS', 'useTheme'] },
+        {
+          allowExportNames: [
+            'NAV_ITEMS',
+            'AVATAR_ICON_NAMES',
+            'initials',
+            'buttonClass',
+            'inputClass',
+            'useTheme',
+            'useAuth',
+            'useToast',
+            'useErrorText',
+          ],
+        },
       ],
       // Design tokens only (TDD §12): no raw hex colors in class names.
       'no-restricted-syntax': [

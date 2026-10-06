@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatLongDate, monthName, weekdayName } from './dates';
+import { formatFullDate, formatLongDate, monthName, weekdayName } from './dates';
 
 // 2026-10-06 is a Tuesday. Noon local time avoids any time-zone edge.
 const date = new Date(2026, 9, 6, 12);
@@ -27,5 +27,12 @@ describe('Georgian names', () => {
     expect(weekdayName(1, 'en', 'short')).toBe('Mon');
     expect(weekdayName(7, 'en')).toBe('Sunday');
     expect(monthName(9, 'en')).toBe('October');
+  });
+});
+
+describe('formatFullDate', () => {
+  it('includes the year', () => {
+    expect(formatFullDate(date, 'ka')).toBe('6 ოქტომბერი 2026');
+    expect(formatFullDate(date, 'en')).toBe('October 6, 2026');
   });
 });

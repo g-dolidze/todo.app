@@ -14,8 +14,6 @@ interface ThemeContextValue {
   preference: ThemePreference;
   resolved: ResolvedTheme;
   setPreference: (preference: ThemePreference) => void;
-  /** Header button: switch between light and dark explicitly. */
-  toggle: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -42,13 +40,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     storeTheme(next);
   }, []);
 
-  const toggle = useCallback(() => {
-    setPreference(resolved === 'dark' ? 'LIGHT' : 'DARK');
-  }, [resolved, setPreference]);
-
   const value = useMemo(
-    () => ({ preference, resolved, setPreference, toggle }),
-    [preference, resolved, setPreference, toggle],
+    () => ({ preference, resolved, setPreference }),
+    [preference, resolved, setPreference],
   );
 
   return <ThemeContext value={value}>{children}</ThemeContext>;

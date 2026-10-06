@@ -1,11 +1,21 @@
 import type { RouteObject } from 'react-router';
 import { AppLayout } from './components/AppLayout';
+import { AuthLayout } from './components/AuthLayout';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SectionPage } from './pages/SectionPage';
 import { TodayPage } from './pages/TodayPage';
 
 export const routes: RouteObject[] = [
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <RegisterPage /> },
+    ],
+  },
   {
     element: <AppLayout />,
     children: [

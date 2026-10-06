@@ -40,6 +40,13 @@ describe('POST /auth/register', () => {
     expect(stored.passwordHash).toMatch(/^\$argon2id\$/);
   });
 
+  it('keeps the theme a guest picked before signing up', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ ...validUser, theme: 'DARK', locale: 'en' });
+    expect(res.body.user).toMatchObject({ theme: 'DARK', locale: 'en' });
+  });
+
   it('sets a secure-by-default refresh cookie limited to the auth path', async () => {
     const res = await request(app).post('/api/v1/auth/register').send(validUser);
     const cookie = ([] as string[]).concat(res.headers['set-cookie'] ?? []).join(';');
@@ -48,6 +55,16 @@ describe('POST /auth/register', () => {
     expect(cookie).toMatch(/SameSite=Strict/i);
     expect(cookie).toMatch(/Path=\/api\/v1\/auth/i);
     expect(cookie).toMatch(/Max-Age=2592000/i);
+  });
+
+  it('also sets a readable session hint cookie that holds no secret', async () => {
+    const res = await request(app).post('/api/v1/auth/register').send(validUser);
+    const hint = ([] as string[])
+      .concat(res.headers['set-cookie'] ?? [])
+      .find((cookie) => cookie.startsWith('progress_session='));
+    expect(hint).toMatch(/^progress_session=1;/);
+    expect(hint).not.toMatch(/HttpOnly/i);
+    expect(hint).toMatch(/Path=\/;/);
   });
 
   it('marks the cookie Secure in production', async () => {
@@ -155,6 +172,7 @@ describe('POST /auth/logout', () => {
     const res = await request(app).post('/api/v1/auth/logout').set('Cookie', cookie);
     expect(res.status).toBe(204);
     expect(String(res.headers['set-cookie'])).toMatch(/progress_rt=;/);
+    expect(String(res.headers['set-cookie'])).toMatch(/progress_session=;/);
     expect((await request(app).post('/api/v1/auth/refresh').set('Cookie', cookie)).status).toBe(
       401,
     );

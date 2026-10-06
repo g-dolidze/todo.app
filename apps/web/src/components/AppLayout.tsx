@@ -1,6 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet } from 'react-router';
+import { useAuth } from '../auth/AuthProvider';
+import { usePreferences } from '../auth/usePreferences';
 import { useTheme } from '../theme/ThemeProvider';
+import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 import { Icon, type IconName } from './Icon';
 
@@ -23,6 +26,7 @@ const iconButton =
 
 function LanguageButton() {
   const { t, i18n } = useTranslation();
+  const { setLocale } = usePreferences();
   const next = i18n.language === 'ka' ? 'en' : 'ka';
   return (
     <button
@@ -30,7 +34,7 @@ function LanguageButton() {
       className={`${iconButton} text-xs font-black tracking-wider`}
       aria-label={t('header.switchLanguage')}
       title={t('header.switchLanguage')}
-      onClick={() => void i18n.changeLanguage(next)}
+      onClick={() => setLocale(next)}
     >
       <span lang={next}>{next === 'en' ? 'EN' : 'ქა'}</span>
     </button>
@@ -39,10 +43,17 @@ function LanguageButton() {
 
 function ThemeButton() {
   const { t } = useTranslation();
-  const { resolved, toggle } = useTheme();
+  const { resolved } = useTheme();
+  const { toggleTheme } = usePreferences();
   const label = resolved === 'dark' ? t('header.themeToLight') : t('header.themeToDark');
   return (
-    <button type="button" className={iconButton} aria-label={label} title={label} onClick={toggle}>
+    <button
+      type="button"
+      className={iconButton}
+      aria-label={label}
+      title={label}
+      onClick={toggleTheme}
+    >
       <Icon name={resolved === 'dark' ? 'sun' : 'moon'} />
     </button>
   );
@@ -50,6 +61,7 @@ function ThemeButton() {
 
 export function AppLayout() {
   const { t } = useTranslation();
+  const { status, user } = useAuth();
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -91,19 +103,23 @@ export function AppLayout() {
           <div className="flex items-center gap-2">
             <LanguageButton />
             <ThemeButton />
+            {status === 'guest' && (
+              <Link
+                to="/login"
+                className="hidden min-h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-on-primary transition hover:bg-primary-strong active:scale-95 sm:inline-flex"
+              >
+                {t('header.signIn')}
+              </Link>
+            )}
             <NavLink
               to="/profile"
               aria-label={t('nav.profile')}
-              title={t('nav.profile')}
+              title={user ? `${user.firstName} ${user.lastName}` : t('nav.profile')}
               className={({ isActive }) =>
-                `grid size-11 place-items-center rounded-full transition active:scale-95 ${
-                  isActive
-                    ? 'bg-primary text-on-primary'
-                    : 'bg-avatar text-on-avatar hover:brightness-95'
-                }`
+                `rounded-full transition hover:brightness-95 active:scale-95 ${isActive ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface' : ''}`
               }
             >
-              <Icon name="profile" />
+              <Avatar user={user} />
             </NavLink>
           </div>
         </div>

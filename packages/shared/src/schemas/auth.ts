@@ -43,6 +43,8 @@ export const RegisterSchema = z.strictObject({
   password: PasswordSchema,
   timezone: TimeZoneSchema,
   locale: z.enum(LOCALES),
+  /** The theme a guest already picked, so signing up does not reset it. */
+  theme: z.enum(THEMES).optional(),
 });
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 
@@ -52,16 +54,20 @@ export const LoginSchema = z.strictObject({
 });
 export type LoginInput = z.infer<typeof LoginSchema>;
 
-export const UpdateMeSchema = z
-  .strictObject({
-    firstName: NameSchema,
-    lastName: NameSchema,
-    avatar: z.enum(AVATAR_ICONS).nullable(),
-    timezone: TimeZoneSchema,
-    locale: z.enum(LOCALES),
-    theme: z.enum(THEMES),
-    weekStart: z.union([z.literal(1), z.literal(7)]),
-  })
+/** The "Personal details" form on the profile page. */
+export const ProfileDetailsSchema = z.strictObject({
+  firstName: NameSchema,
+  lastName: NameSchema,
+  avatar: z.enum(AVATAR_ICONS).nullable(),
+  timezone: TimeZoneSchema,
+  weekStart: z.union([z.literal(1), z.literal(7)]),
+});
+export type ProfileDetailsInput = z.infer<typeof ProfileDetailsSchema>;
+
+export const UpdateMeSchema = ProfileDetailsSchema.extend({
+  locale: z.enum(LOCALES),
+  theme: z.enum(THEMES),
+})
   .partial()
   .refine((value) => Object.keys(value).length > 0, 'update.empty');
 export type UpdateMeInput = z.infer<typeof UpdateMeSchema>;

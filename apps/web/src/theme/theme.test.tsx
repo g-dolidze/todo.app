@@ -35,7 +35,7 @@ describe('theme (TDD §12)', () => {
     localStorage.setItem(THEME_STORAGE_KEY, 'light');
     renderApp('/profile');
 
-    await userEvent.click(screen.getByRole('radio', { name: 'სისტემური' }));
+    await userEvent.click(await screen.findByRole('radio', { name: 'სისტემური' }));
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('system');
     expect(html.dataset.theme).toBe('light');
 
