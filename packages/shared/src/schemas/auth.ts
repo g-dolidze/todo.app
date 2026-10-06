@@ -22,6 +22,7 @@ export const EmailSchema = z
   .string()
   .trim()
   .toLowerCase()
+  .min(1, 'email.required')
   .max(254, 'email.invalid')
   .pipe(z.email('email.invalid'));
 

@@ -56,6 +56,12 @@ describe('RegisterSchema', () => {
     );
   });
 
+  it('asks for an email when it is empty', () => {
+    expect(firstMessage(RegisterSchema.safeParse({ ...valid, email: '   ' }))).toBe(
+      'email.required',
+    );
+  });
+
   it('rejects unknown fields', () => {
     expect(RegisterSchema.safeParse({ ...valid, isAdmin: true }).success).toBe(false);
   });

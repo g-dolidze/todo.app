@@ -10,16 +10,16 @@ import './styles/index.css';
 import './i18n';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router';
+import { BrowserRouter } from 'react-router';
 import { AppProviders } from './App';
-import { routes } from './routes';
-
-const router = createBrowserRouter(routes);
+import { AppRoutes } from './routes';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AppProviders>
-      <RouterProvider router={router} />
-    </AppProviders>
+    <BrowserRouter>
+      <AppProviders>
+        <AppRoutes />
+      </AppProviders>
+    </BrowserRouter>
   </StrictMode>,
 );

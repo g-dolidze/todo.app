@@ -10,6 +10,12 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
+  expect: {
+    // Same browser build everywhere, so screenshots should match almost exactly. A few
+    // anti-aliased pixels are tolerated; a single changed word (~500 px) is not.
+    toHaveScreenshot: { maxDiffPixels: 30, animations: 'disabled', caret: 'hide' },
+  },
+  snapshotPathTemplate: '{testDir}/__screenshots__/{projectName}/{arg}{ext}',
   use: {
     baseURL: 'http://localhost:4173',
     trace: 'retain-on-failure',

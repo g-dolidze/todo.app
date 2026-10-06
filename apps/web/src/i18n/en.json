@@ -179,7 +179,8 @@
   },
   "validation": {
     "email": {
-      "invalid": "Enter a valid email address."
+      "invalid": "Enter a valid email address.",
+      "required": "Enter your email address."
     },
     "password": {
       "tooShort": "Use at least 8 characters.",

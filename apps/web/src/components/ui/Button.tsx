@@ -38,7 +38,7 @@ export function Button({
       aria-busy={loading || undefined}
       {...props}
     >
-      <span className={`inline-flex items-center gap-2 ${loading ? 'invisible' : ''}`}>
+      <span className={`inline-flex items-center gap-2 ${loading ? 'opacity-0' : ''}`}>
         {children}
       </span>
       {loading && (

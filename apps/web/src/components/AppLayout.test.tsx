@@ -27,7 +27,7 @@ describe('AppLayout', () => {
 
     await userEvent.click(within(desktopNav!).getByRole('link', { name: 'მისიები' }));
     expect(router.state.location.pathname).toBe('/missions');
-    expect(screen.getByRole('heading', { level: 1, name: 'ჩემი მისიები' })).toBeVisible();
+    expect(await screen.findByRole('heading', { level: 1, name: 'ჩემი მისიები' })).toBeVisible();
   });
 
   it('shows a friendly 404 with a way back', async () => {

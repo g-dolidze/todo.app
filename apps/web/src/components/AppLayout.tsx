@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet } from 'react-router';
 import { useAuth } from '../auth/AuthProvider';
@@ -130,7 +131,9 @@ export function AppLayout() {
         tabIndex={-1}
         className="mx-auto w-full max-w-[1240px] flex-1 px-4 pb-28 pt-6 outline-none sm:px-7 sm:pt-10 nav:pb-12"
       >
-        <Outlet />
+        <Suspense fallback={null}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <footer className="hidden border-t border-line py-6 text-center text-sm text-muted nav:block">

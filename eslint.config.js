@@ -13,6 +13,8 @@ export default tseslint.config(
       'apps/api/src/generated',
       '**/playwright-report',
       '**/test-results',
+      '**/storybook-static',
+      '**/.lighthouseci',
     ],
   },
   js.configs.recommended,
@@ -26,6 +28,11 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
       ],
     },
+  },
+  {
+    files: ['**/*.cjs'],
+    languageOptions: { sourceType: 'commonjs', globals: globals.node },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   {
     files: ['apps/api/**/*.ts', '**/*.config.{js,ts}', '**/scripts/**'],

@@ -186,8 +186,8 @@ Existing users bring their data with the **one-time import from localStorage** (
 |-------|--------|-----|
 | Language | **TypeScript** everywhere | One language and shared types between frontend and backend. |
 | Frontend | **React 19 + Vite 8** | Fast dev server, widely known. |
-| Routing | **React Router** | Standard. |
-| Server state | **TanStack Query** | Caching and optimistic updates for check-ins. |
+| Routing | **React Router** (declarative `<Routes>`; pages lazy-loaded with `React.lazy`) | Standard. Declarative mode is ~18 KB gzip smaller than the data router, which matters for the phone performance budget (§14.6). |
+| Server state | **TanStack Query** (added in M2, with the first cached server data) | Caching and optimistic updates for check-ins. |
 | Forms / validation | **React Hook Form + Zod** | The same Zod schemas validate on the server (shared package). |
 | Styling | **Tailwind CSS 4** with a `dark` variant on `[data-theme='dark']` | Easy light/dark theming. |
 | Charts | **Recharts** | Has `BarChart` and `LineChart` built in, responsive, works with React. |
@@ -720,8 +720,17 @@ Days:     [Mon] [Tue] [Wed] [Thu] [Fri] [Sat] [Sun]   ← shown only for "specif
 - **Guest mode:** query hooks call a `DataSource` interface with two implementations: `ApiDataSource` (logged in)
   and `LocalDataSource` (guest, browser storage in the v0.1 format, §7.4). Components never know which one is used.
   `LocalDataSource` reuses the pure functions from `packages/shared/src/domain`, so guests get the same rules.
-- **Auth**: the access token is kept **in memory** (an `AuthContext`), never in `localStorage`. On a 401 the API client calls
-  `/auth/refresh` once, then retries the request; if refresh fails it redirects to `/login`.
+- **Auth** (`apps/web/src/auth/AuthProvider.tsx`, `apps/web/src/api/client.ts`):
+  - The access token is kept **in memory**, never in `localStorage`.
+  - On app start, the session is restored with `POST /auth/refresh` — **only if** the readable `progress_session`
+    hint cookie exists (§13). Guests therefore make no request that can only fail.
+  - On a 401 the API client calls `/auth/refresh` **once** (parallel requests share it), then retries. If refresh
+    fails, the app becomes a guest and shows "Your session ended" — it does not force a redirect.
+  - After sign-in, the profile's `theme` and `locale` are applied (the server is the source of truth). Changing them
+    in the header or on the profile page saves them to the account (`usePreferences`).
+  - Registration sends the theme the guest already picked, so signing up does not reset it.
+- **Forms**: React Hook Form + the shared Zod schemas. Zod messages are translation keys (`validation.<key>`);
+  server `VALIDATION_ERROR` field errors are mapped onto the same fields.
 
 ### 11.4 Charts (Recharts)
 
@@ -807,9 +816,11 @@ flowchart LR
 
 | Topic | Decision |
 |-------|----------|
-| Passwords | Hashed with **argon2id** (or bcrypt with cost 12). Never logged. |
+| Passwords | Hashed with **argon2id** (`@node-rs/argon2`, OWASP default parameters). Never logged. A failed login for an unknown email still runs a hash check, so timing does not reveal which emails exist. |
 | Access token | JWT, valid **15 min**, payload `{ sub: userId }`, kept in memory on the client. |
 | Refresh token | Random 256-bit value, valid **30 days**, stored **hashed** in DB, sent as a `httpOnly; Secure; SameSite=Strict` cookie on path `/api/v1/auth`. **Rotated** on every refresh; reuse of an old token revokes all of the user's tokens. |
+| Session hint cookie | `progress_session=1`, **readable** by JavaScript, no secret, same lifetime as the refresh cookie, path `/`. It only tells the web app "a session may exist". Set and cleared together with the refresh cookie. |
+| Password change | Signs out every other device (revokes their refresh tokens); the current device stays signed in. |
 | Authorization | **Every** query is scoped by `userId` from the token (`where: { id, userId }`). Another user's resource → `404`. |
 | Validation | Zod on every body, param and query. Reject unknown fields. |
 | Rate limiting | `/auth/*`: 10 requests/min per IP. Everything else: 300 requests/min per user. |
@@ -874,8 +885,22 @@ then the code, then refactor.
 
 ### 14.5 CI (GitHub Actions, on every PR)
 
-`pnpm install` → `lint` → `typecheck` → `i18n:check` → `test:unit` → `test:api` (Postgres service container) → `build`
-→ `test:e2e` → `test:visual` → `lighthouse`.
+`pnpm install` → `lint` → `format:check` → `typecheck` → `i18n:check` → `test:unit` → `test:api` (Postgres service
+container) → `build` → `test:e2e` (includes the `@visual` screenshot tests) → `build-storybook` + `test:stories` →
+`lighthouse`. The whole job is `.github/workflows/ci.yml`.
+
+How the quality tools are set up:
+
+| Tool | Setup | Update / run locally |
+|------|-------|----------------------|
+| **Playwright** | Pinned to **1.56.1** (Chromium 141) everywhere, via `pnpm-workspace.yaml` overrides, so local machines and CI use the identical browser. E2E starts the real API (test database) and the production web build. | `pnpm test:e2e` |
+| **Visual regression** | `apps/web/e2e/visual.spec.ts`: every screen × {light+ka, dark+en} × {desktop 1440, phone 320}. Clock frozen. Baselines in `e2e/__screenshots__/`. Tolerance: 30 pixels (a changed word fails). | `pnpm --filter @progress/web test:visual --update-snapshots`, then **look at every changed image** before committing |
+| **Storybook** | `apps/web/.storybook`; toolbar switches theme and language. `e2e-stories/` checks that every story renders without errors and passes axe in light and dark. | `pnpm --filter @progress/web storybook` |
+| **Lighthouse CI** | `apps/web/lighthouserc.cjs`: mobile profile (mid-range phone, slow 4G), 3 runs, median. Fails below 95 in any category, LCP > 2.5 s, CLS > 0.1 or TBT > 200 ms. | `pnpm --filter @progress/web lighthouse` |
+
+**Performance techniques in use:** route-level code splitting; `build/routePreload.ts` preloads the opened page's
+chunks in parallel with the main bundle; guests never download the signed-in profile's form code. Results at the
+end of M1 (mobile profile): every page scores 96–98, LCP 2.0–2.46 s.
 **A PR cannot be merged unless CI is green** and at least one teammate has approved it.
 
 ### 14.6 Quality bar: "looks good and works perfectly"
@@ -979,7 +1004,7 @@ todo.app/
 | Milestone | Scope | Done when |
 |-----------|-------|-----------|
 | **M0 — Setup** ✅ done | Monorepo, lint/format, CI, Docker Postgres, Prisma schema + migration, empty React app with routing, Pro-gress theme tokens, ka/en i18n setup (strings copied from pro_gress) | CI green on an empty app; `docker compose up` + `pnpm dev` works |
-| **M1 — Auth & Profile** | Register, login, refresh, logout, `/me` CRUD, profile page, save theme and language to the profile, Storybook + visual regression + Lighthouse CI steps (§14.5) | US-1..US-4, US-21 pass; E2E journeys 4 and 6 pass |
+| **M1 — Auth & Profile** ✅ done | Register, login, refresh, logout, `/me` CRUD, profile page, save theme and language to the profile, Storybook + visual regression + Lighthouse CI steps (§14.5) | US-1..US-4, US-21 pass; E2E journeys 4 and 6 pass |
 | **M2 — Habits** | Domain `isDue` + schedule versioning, habits CRUD, archive, reorder, Habits page | US-5..US-9 pass |
 | **M3 — Daily check** | `/today`, check-in endpoints, streaks, one-time tasks, Today page with optimistic toggle | US-10..US-12, US-17; E2E journeys 1–2 |
 | **M3.5 — Missions & calendar** | Missions API + page, mission habits, `/calendar` + calendar badges | US-18..US-20; E2E journey 9 |

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, Outlet } from 'react-router';
 import { useAuth } from '../auth/AuthProvider';
@@ -49,7 +50,9 @@ export function AuthLayout() {
         className="flex flex-1 items-start justify-center px-4 pb-12 pt-4 sm:items-center sm:pt-0"
       >
         <div className="w-full max-w-md">
-          <Outlet />
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>

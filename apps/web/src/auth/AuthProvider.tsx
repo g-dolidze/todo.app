@@ -7,7 +7,6 @@ import type {
   UpdateMeInput,
   UserDto,
 } from '@progress/shared';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
   use,
@@ -42,7 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Guests have no session cookie: they are known to be guests right away, with no request.
   const [status, setStatus] = useState<Status>(() => (hasSessionHint() ? 'loading' : 'guest'));
   const [user, setUser] = useState<UserDto | null>(null);
-  const queryClient = useQueryClient();
   const { setPreference } = useTheme();
   const { i18n, t } = useTranslation();
   const toast = useToast();
@@ -71,8 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session.set(null);
     setUser(null);
     setStatus('guest');
-    queryClient.clear();
-  }, [queryClient]);
+  }, []);
 
   // Restore the session from the refresh cookie once, when the app opens.
   useEffect(() => {

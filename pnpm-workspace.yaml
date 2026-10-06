@@ -6,3 +6,9 @@ onlyBuiltDependencies:
   - '@prisma/engines'
   - esbuild
   - prisma
+
+# One Playwright everywhere: 1.56.1 ships Chromium 141 (build 1194), the same browser on
+# developer machines and in CI, so visual-regression screenshots are comparable.
+overrides:
+  playwright: 1.56.1
+  playwright-core: 1.56.1
