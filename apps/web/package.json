@@ -1,0 +1,51 @@
+{
+  "name": "@progress/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:visual": "playwright test --grep @visual",
+    "i18n:check": "node scripts/check-i18n.mjs",
+    "lighthouse": "lhci autorun --config=lighthouserc.cjs",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build --quiet",
+    "test:stories": "playwright test --config playwright.stories.config.ts"
+  },
+  "dependencies": {
+    "@fontsource/noto-sans-georgian": "^5.3.0",
+    "@hookform/resolvers": "^5.9.1",
+    "@progress/shared": "workspace:*",
+    "i18next": "^26.4.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-hook-form": "^7.89.0",
+    "react-i18next": "^17.0.15",
+    "react-router": "^8.4.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "1.56.1",
+    "@storybook/addon-a11y": "^10.6.1",
+    "@storybook/react-vite": "^10.6.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "jsdom": "^30.1.2",
+    "playwright-core": "1.56.1",
+    "storybook": "^10.6.1",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.3"
+  }
+}

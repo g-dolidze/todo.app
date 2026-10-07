@@ -1,0 +1,38 @@
+{
+  "name": "progress-v2",
+  "private": true,
+  "description": "Pro-gress v2 \u2014 daily habits, missions and analytics",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @progress/api --filter @progress/web dev",
+    "build": "pnpm -r build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r typecheck",
+    "i18n:check": "pnpm --filter @progress/web i18n:check",
+    "test": "pnpm test:unit && pnpm test:api",
+    "test:unit": "pnpm --filter @progress/shared --filter @progress/web test",
+    "test:api": "pnpm --filter @progress/api test",
+    "test:e2e": "pnpm --filter @progress/web test:e2e",
+    "db:migrate": "pnpm --filter @progress/api db:migrate",
+    "db:reset": "pnpm --filter @progress/api db:reset"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.5",
+    "@vitest/coverage-v8": "^5.0.3",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}

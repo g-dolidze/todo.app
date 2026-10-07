@@ -128,3 +128,14 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Project
+dist/
+.env
+.env.*
+!.env.example
+apps/api/src/generated/
+playwright-report/
+test-results/
+storybook-static/
+.lighthouseci/
